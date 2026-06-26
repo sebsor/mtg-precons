@@ -267,6 +267,18 @@
        DETAIL PAGE
     ───────────────────────────────────────────────────────────── */
 
+    /* Credit bar sits below hero on all screen sizes */
+    .detail-credit-bar {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-family: sans-serif;
+      text-align: center;
+      padding: 4px 12px;
+      flex-shrink: 0;
+      background: var(--bg);
+      min-height: 18px;
+    }
+
     /* Base rules — apply everywhere, overridden per breakpoint below */
     #page-detail { }
     .detail-hero {
@@ -276,6 +288,19 @@
       background: #0e0b06;
       overflow: hidden;
     }
+    /* Default (art crop): fill the area */
+    .detail-hero img {
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: top center;
+      display: block;
+      transition: opacity 0.2s;
+    }
+    /* Full card mode: show entire card without cropping */
+    .detail-hero.card-mode img {
+      object-fit: contain;
+      object-position: center;
+    }
+    .detail-hero img.loading { opacity: 0; }
     .detail-columns {
       display: flex;
       flex: 1;
@@ -288,7 +313,7 @@
     }
     .detail-preview-panel { /* inherits display:none from .card-preview-panel on mobile */ }
 
-    /* Mobile: lock page, portrait card image, scrollable list below */
+    /* Mobile: lock page, art crop hero, scrollable list below */
     @media (max-width: 899px) {
       #page-detail.active {
         height: 100dvh;
@@ -296,21 +321,16 @@
         overflow: hidden;
       }
       .detail-hero {
-        height: 42dvh;
+        height: 40dvh;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        flex-shrink: 0;
       }
-      .detail-hero img {
-        height: 100%;
-        width: auto;
-        max-width: 100%;
-        object-fit: contain;
-        display: block;
-        transition: opacity 0.2s;
+      .detail-credit-bar {
+        flex-shrink: 0;
       }
-      .detail-hero img.loading { opacity: 0; }
       .detail-hero-overlay { display: none; }
       .detail-hero-hint {
         position: absolute;
@@ -329,18 +349,9 @@
         aspect-ratio: 16/7;
         background: #1c1710;
       }
-      .detail-hero img {
-        width: 100%; height: 100%;
-        object-fit: cover; object-position: top center;
-      }
       .detail-hero-overlay {
         position: absolute; inset: 0;
         background: linear-gradient(to bottom, transparent 30%, var(--bg) 100%);
-      }
-      .detail-hero-credit {
-        position: absolute; bottom: 6px; right: 8px;
-        font-size: 0.58rem; color: rgba(255,255,255,0.4);
-        font-family: sans-serif;
       }
       .detail-hero-hint { display: none; }
       .detail-preview-panel {
@@ -606,8 +617,9 @@
   </div>
   <div class="detail-hero" id="detail-hero">
     <div class="art-placeholder">⚔</div>
-    <div class="detail-hero-hint">Tap a card below to preview · tap here to reset</div>
+    <div class="detail-hero-hint">Tap a card to preview · tap image to reset</div>
   </div>
+  <div class="detail-credit-bar" id="detail-credit-bar"></div>
   <div class="detail-columns">
     <div class="detail-body" id="detail-body">
       <div class="detail-loading"><div class="spinner"></div><span>Loading deck list…</span></div>
@@ -967,18 +979,22 @@ async function openDetail(deckName) {
   const deck = allDecks.find(d => d.name === deckName);
   if (!deck) return;
 
-  // Set header
   document.getElementById('detail-header-title').textContent = deck.name;
 
-  // Hero — set commander image as default
-  const commanderImg = deck.cardImg || deck.art || null;
-  setDetailHeroImage(commanderImg, deck.face, deck.artist, true);
+  // Default hero = art crop (atmospheric, fills space nicely)
+  // Card tap = full card image (shows text box)
+  const defaultImg = deck.art || deck.cardImg || null;
+  const defaultMode = 'art'; // cover mode
 
-  // Tap hero to reset to commander image (mobile)
+  setDetailHeroImage(defaultImg, deck.face, deck.artist, 'art');
+
+  // Tap hero to reset to art crop
   const $hero = document.getElementById('detail-hero');
-  $hero.onclick = () => setDetailHeroImage(commanderImg, deck.face, deck.artist, true);
+  $hero.onclick = () => {
+    setDetailHeroImage(defaultImg, deck.face, deck.artist, 'art');
+    document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
+  };
 
-  // Body: show loading while fetching card types
   const $body = document.getElementById('detail-body');
   $body.scrollTop = 0;
   $body.innerHTML = `
@@ -1001,52 +1017,63 @@ async function openDetail(deckName) {
 
   showPage('page-detail');
 
-  // Fetch card types
   const cards = await getDetailCards(deck);
   renderDetailList(cards, document.getElementById('detail-list-inner'));
 }
 
-function setDetailHeroImage(imgUrl, altText, artist, isCommander) {
-  const $hero = document.getElementById('detail-hero');
+// mode: 'art' = cover/crop (commander art), 'card' = contain (full card with text)
+function setDetailHeroImage(imgUrl, altText, artist, mode) {
+  const $hero   = document.getElementById('detail-hero');
+  const $credit = document.getElementById('detail-credit-bar');
+
+  // Toggle cover vs contain via class
+  $hero.classList.toggle('card-mode', mode === 'card');
+
   if (!imgUrl) {
-    $hero.innerHTML = `<div class="art-placeholder" style="font-size:3rem">⚔</div>
-      <div class="detail-hero-hint">Tap a card below to preview · tap here to reset</div>`;
+    let $ph = $hero.querySelector('.art-placeholder');
+    if (!$ph) {
+      $hero.innerHTML = '';
+      $ph = document.createElement('div');
+      $ph.className = 'art-placeholder';
+      $ph.style.fontSize = '3rem';
+      $ph.textContent = '⚔';
+      $hero.appendChild($ph);
+    }
+    if ($credit) $credit.textContent = '';
     return;
   }
-  // Keep the hint element, replace/update the img
+
+  // Reuse existing img element to avoid flicker
   let $img = $hero.querySelector('img');
   if (!$img) {
+    // Clear placeholder, add img
+    $hero.innerHTML = '';
     $img = document.createElement('img');
-    $hero.insertBefore($img, $hero.firstChild);
+    $hero.appendChild($img);
+    // Re-add overlay and hint
+    const $ov = document.createElement('div');
+    $ov.className = 'detail-hero-overlay';
+    $hero.appendChild($ov);
+    const $hint = document.createElement('div');
+    $hint.className = 'detail-hero-hint';
+    $hint.textContent = 'Tap a card to preview · tap image to reset';
+    $hero.appendChild($hint);
   }
+
   if ($img.src !== imgUrl) {
     $img.classList.add('loading');
     $img.src = imgUrl;
     $img.alt = altText || '';
     $img.onload = () => $img.classList.remove('loading');
   }
-  // Desktop overlay + credit (only shown via CSS on desktop)
-  let $overlay = $hero.querySelector('.detail-hero-overlay');
-  if (!$overlay) {
-    $overlay = document.createElement('div');
-    $overlay.className = 'detail-hero-overlay';
-    $hero.appendChild($overlay);
-  }
-  let $credit = $hero.querySelector('.detail-hero-credit');
-  if (!$credit) {
-    $credit = document.createElement('div');
-    $credit.className = 'detail-hero-credit';
-    $hero.appendChild($credit);
-  }
-  $credit.textContent = isCommander && artist
-    ? `Art © Wizards of the Coast · ${artist}`
-    : '© Wizards of the Coast';
-  // Make sure hint stays
-  if (!$hero.querySelector('.detail-hero-hint')) {
-    const $hint = document.createElement('div');
-    $hint.className = 'detail-hero-hint';
-    $hint.textContent = 'Tap a card below to preview · tap here to reset';
-    $hero.appendChild($hint);
+
+  // Credit bar below hero
+  if ($credit) {
+    if (mode === 'art' && artist) {
+      $credit.textContent = `Art by ${artist} · © Wizards of the Coast`;
+    } else {
+      $credit.textContent = '© Wizards of the Coast';
+    }
   }
 }
 
@@ -1144,11 +1171,10 @@ function renderDetailList(cards, $el) {
     row.addEventListener('mouseenter', () => showDetailCardPreview(img, name));
     row.addEventListener('mouseleave', () => hideDetailCardPreview());
 
-    // Mobile tap → swap hero image
+    // Mobile tap → swap hero to full card image
     row.addEventListener('click', () => {
       if (window.matchMedia('(max-width: 899px)').matches) {
-        setDetailHeroImage(img, name, null, false);
-        // Highlight the tapped row briefly
+        setDetailHeroImage(img, name, null, 'card');
         document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
         row.classList.add('tapped');
       }

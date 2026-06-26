@@ -1,4 +1,4 @@
-const CACHE = 'mtg-precons-v2';
+const CACHE = 'mtg-precons-v3';
 const SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
