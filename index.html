@@ -109,7 +109,7 @@
       display: flex; flex-direction: column; gap: 8px;
     }
     .browse-toolbar-row {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
     #browse-search {
       flex: 1; background: var(--bg); border: 1px solid var(--border);
@@ -411,7 +411,7 @@
         <button class="pip-btn" data-c="G" title="Green"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="G"></button>
         <button class="pip-btn" data-c="C" title="Colorless"><img src="https://svgs.scryfall.io/card-symbols/C.svg" alt="C"></button>
       </div>
-      <select id="start-set" style="background:#2a2010;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.75rem;padding:5px 7px;outline:none;cursor:pointer;-webkit-appearance:none;margin-left:auto">
+      <select id="start-set">
         <option value="">All sets</option>
       </select>
     </div>
