@@ -496,7 +496,7 @@ const DELAY     = 120; // ms between batch requests — well within Scryfall's 1
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
 const PASTELS    = ['#f4e7e2', '#cee3e0', '#c3ccf8'];
-const CACHE_KEY  = 'mtg_precons_v6';
+const CACHE_KEY  = 'mtg_precons_v7';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
 
@@ -623,9 +623,14 @@ function setColors(deck) {
 // ── Cache helpers ──────────────────────────────────────────────
 function saveCache(decks) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), decks }));
+    // Strip rawCards before saving — they account for ~2.5MB of the payload.
+    // rawCards are re-fetched from the taw JSON on demand when a deck detail is opened.
+    const slim = decks.map(d => {
+      const { rawCards, ...rest } = d;
+      return rest;
+    });
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), decks: slim }));
   } catch(e) {
-    // localStorage can be full or blocked — silently ignore
     console.warn('Cache write failed:', e.message);
   }
 }
@@ -943,11 +948,26 @@ function setDetailHeroImage(imgUrl, altText, artist, mode) {
 async function getDetailCards(deck) {
   if (detailCardCache[deck.name]) return detailCardCache[deck.name];
 
-  // Combine all cards (main + commander, deduplicated by name)
-  const allNames = deck.rawCards;
-  // Batch into groups of 75 for Scryfall collection endpoint
+  // rawCards may be absent if deck was loaded from cache (we strip them to save space).
+  // Re-fetch the taw JSON to get this deck's card list.
+  let rawCards = deck.rawCards;
+  if (!rawCards || rawCards.length === 0) {
+    try {
+      const res = await fetch(DECKS_URL);
+      if (res.ok) {
+        const raw = await res.json();
+        const match = raw.find(d => d.type === 'Commander Deck' && d.name === deck.name);
+        if (match) {
+          rawCards = [...(match.cards||[]), ...(match.commander||[])];
+          deck.rawCards = rawCards; // store for this session
+        }
+      }
+    } catch { /* proceed with empty list */ }
+  }
+  if (!rawCards || rawCards.length === 0) return [];
+
   const batches = [];
-  for (let i = 0; i < allNames.length; i += 75) batches.push(allNames.slice(i, i+75));
+  for (let i = 0; i < rawCards.length; i += 75) batches.push(rawCards.slice(i, i+75));
 
   const typeMap = {};   // name -> type_line
   const imgMap  = {};   // name -> full card image URL
@@ -977,7 +997,7 @@ async function getDetailCards(deck) {
   // Build result: merge rawCards with types + images
   const seen = new Set();
   const result = [];
-  for (const c of allNames) {
+  for (const c of rawCards) {
     const key = c.name + '|' + c.foil;
     if (seen.has(key)) continue;
     seen.add(key);
