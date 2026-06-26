@@ -274,8 +274,10 @@
       display: flex; align-items: center; gap: 10px;
       padding: 9px 12px; background: var(--surface);
       border: 1px solid var(--border); border-radius: 12px;
-      margin-bottom: 6px;
+      margin-bottom: 6px; transition: background 0.15s;
     }
+    .commander-entry:hover { background: var(--bg); }
+    .commander-entry:active { opacity: 0.7; }
     .commander-label {
       font-size: 0.6rem; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.05em;
@@ -835,9 +837,10 @@ async function openDetail(deckName) {
       <div class="detail-set">${esc(deck.setName)}</div>
       <div class="detail-colors">${pipHtml(deck.colors)}</div>
       <div class="detail-commanders">
-        <h3>Commanders</h3>
-        ${deck.face ? `<div class="commander-entry"><span class="commander-label">Face</span><span class="commander-name">${esc(deck.face)}</span></div>` : ''}
-        ${deck.second ? `<div class="commander-entry"><span class="commander-label">Partner</span><span class="commander-name">${esc(deck.second)}</span></div>` : ''}
+        <h3>Commander</h3>
+        ${deck.face ? `<div class="commander-entry" id="commander-entry-face" style="cursor:pointer">
+          <span class="commander-name">${esc(deck.face)}</span>
+        </div>` : ''}
       </div>
       <div class="detail-list">
         <h3>Decklist</h3>
@@ -850,7 +853,18 @@ async function openDetail(deckName) {
   showPage('page-detail');
 
   const cards = await getDetailCards(deck);
-  renderDetailList(cards, document.getElementById('detail-list-inner'));
+  renderDetailList(cards, document.getElementById('detail-list-inner'), deck);
+
+  // Wire commander entry click now that we have cardImg from the batch fetch
+  const $cmdEntry = document.getElementById('commander-entry-face');
+  if ($cmdEntry && deck.face) {
+    const cmdCard = cards.find(c => c.name === deck.face);
+    const cmdImg = cmdCard?.cardImg || deck.cardImg || null;
+    $cmdEntry.addEventListener('click', () => {
+      if (cmdImg) setDetailHeroImage(cmdImg, deck.face, deck.artist, 'card');
+      document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
+    });
+  }
 }
 
 // mode: 'art' = cover/crop (commander art), 'card' = contain (full card with text)
@@ -966,11 +980,15 @@ async function getDetailCards(deck) {
   return result;
 }
 
-function renderDetailList(cards, $el) {
+function renderDetailList(cards, $el, deck) {
+  // Exclude the face commander — shown separately above the list
+  const commanderNames = new Set([deck?.face, deck?.second].filter(Boolean));
+  const listCards = cards.filter(c => !commanderNames.has(c.name));
+
   // Group by type
   const groups = {};
   TYPE_ORDER.forEach(t => groups[t] = []);
-  cards.forEach(c => (groups[c.typeGroup]||groups['Other']).push(c));
+  listCards.forEach(c => (groups[c.typeGroup]||groups['Other']).push(c));
 
   const html = TYPE_ORDER
     .filter(t => groups[t].length > 0)
