@@ -326,6 +326,7 @@
     }
     .card-row-name { font-size: 0.82rem; color: var(--text); }
     .card-row-foil { font-size: 0.6rem; color: var(--accent); margin-left: auto; flex-shrink: 0; }
+    .card-row-price { font-size: 0.68rem; color: var(--text-dim); font-family: monospace; margin-left: auto; flex-shrink: 0; }
     .card-row.tapped { background: var(--bg); border-radius: 6px; }
 
     .detail-loading {
@@ -431,7 +432,7 @@
       <select id="start-set">
         <option value="">All sets</option>
       </select>
-      <span style="margin-left:auto;font-size:0.62rem;color:var(--text-dim);font-family:monospace;flex-shrink:0">v2.0</span>
+      <span style="margin-left:auto;font-size:0.62rem;color:var(--text-dim);font-family:monospace;flex-shrink:0">v2.1</span>
     </div>
   </div>
   <!-- First-load overlay: shown while fetching, hidden once ready -->
@@ -867,7 +868,10 @@ async function openDetail(deckName) {
         </div>` : ''}
       </div>
       <div class="detail-list">
-        <h3>Decklist</h3>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+          <h3 style="margin-bottom:0">Decklist</h3>
+          <span id="deck-total" style="font-size:0.72rem;color:var(--text-dim);font-family:monospace"></span>
+        </div>
         <div id="detail-list-inner">
           <div class="detail-loading"><div class="spinner"></div><span>Fetching cards…</span></div>
         </div>
@@ -973,8 +977,9 @@ async function getDetailCards(deck) {
   const batches = [];
   for (let i = 0; i < rawCards.length; i += 75) batches.push(rawCards.slice(i, i+75));
 
-  const typeMap = {};   // name -> type_line
-  const imgMap  = {};   // name -> full card image URL
+  const typeMap  = {};   // name -> type_line
+  const imgMap   = {};   // name -> full card image URL
+  const priceMap = {};   // name -> prices.eur (string or null)
 
   for (const batch of batches) {
     try {
@@ -988,7 +993,7 @@ async function getDetailCards(deck) {
       const data = await res.json();
       (data.data||[]).forEach(card => {
         typeMap[card.name] = card.type_line || 'Other';
-        // Full card image — prefer front face for DFCs
+        priceMap[card.name] = card.prices?.eur ?? null;
         if (card.card_faces && card.card_faces[0]?.image_uris) {
           imgMap[card.name] = card.card_faces[0].image_uris.normal;
         } else if (card.image_uris) {
@@ -1012,6 +1017,7 @@ async function getDetailCards(deck) {
       typeLine: typeMap[c.name] || null,
       typeGroup: classifyType(typeMap[c.name] || ''),
       cardImg: imgMap[c.name] || null,
+      price: priceMap[c.name] ? parseFloat(priceMap[c.name]) : null,
     });
   }
 
@@ -1023,29 +1029,42 @@ function renderDetailList(cards, $el, deck) {
   const commanderNames = new Set([deck?.face, deck?.second].filter(Boolean));
   const listCards = cards.filter(c => !commanderNames.has(c.name));
 
-  // Build groups — only types that have cards
+  // Calculate total — count × price per card, skip nulls
+  const total = cards.reduce((sum, c) => {
+    return c.price != null ? sum + c.price * c.count : sum;
+  }, 0);
+  const hasAnyPrice = cards.some(c => c.price != null);
+  const $total = document.getElementById('deck-total');
+  if ($total) {
+    $total.textContent = hasAnyPrice ? `≈ €${total.toFixed(2)}` : '';
+  }
+
+  // Build groups
   const groups = {};
   TYPE_ORDER.forEach(t => groups[t] = []);
   listCards.forEach(c => (groups[c.typeGroup]||groups['Other']).push(c));
   const activeTypes = TYPE_ORDER.filter(t => groups[t].length > 0);
 
-  // Pastel assigned per type consistently (same type always same color)
   const typeColor = {};
   activeTypes.forEach((t, i) => { typeColor[t] = PASTELS[i % PASTELS.length]; });
 
-  let activeFilter = null; // null = show all
+  let activeFilter = null;
 
   function renderRows() {
     const typesToShow = activeFilter ? [activeFilter] : activeTypes;
     return typesToShow.map(t => {
       const items = groups[t];
-      const rows = items.map(c =>
-        `<div class="card-row" data-img="${esc(c.cardImg||'')}" data-name="${esc(c.name)}">
+      const rows = items.map(c => {
+        const priceStr = c.price != null
+          ? `<span class="card-row-price">€${(c.price * c.count).toFixed(2)}</span>`
+          : '';
+        return `<div class="card-row" data-img="${esc(c.cardImg||'')}" data-name="${esc(c.name)}">
           <span class="card-row-count">${c.count}</span>
           <span class="card-row-name">${esc(c.name)}</span>
           ${c.foil ? '<span class="card-row-foil">✦</span>' : ''}
-        </div>`
-      ).join('');
+          ${priceStr}
+        </div>`;
+      }).join('');
       return `<div class="type-group" data-type="${esc(t)}">
         <div class="type-group-label">${t} (${items.reduce((s,c)=>s+c.count,0)})</div>
         ${rows}
