@@ -143,8 +143,8 @@
     .set-year { font-size: 0.65rem; color: var(--text-dim); font-family: monospace; }
     .set-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
 
-    /* deck card — pastel color assigned via inline style on .deck-card */
     .deck-card {
+      background: var(--surface);
       border-radius: var(--radius); overflow: hidden;
       display: flex; flex-direction: column;
       cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
@@ -494,7 +494,7 @@ const DELAY     = 120; // ms between batch requests — well within Scryfall's 1
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
 const PASTELS    = ['#f4e7e2', '#cee3e0', '#c3ccf8'];
-const CACHE_KEY  = 'mtg_precons_v5';
+const CACHE_KEY  = 'mtg_precons_v6';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
 
