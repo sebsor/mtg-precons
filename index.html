@@ -532,12 +532,11 @@
 //  CONSTANTS
 // ════════════════════════════════════════════════════════════════
 const DECKS_URL = 'https://raw.githubusercontent.com/taw/magic-preconstructed-decks-data/master/decks_v2.json';
-const SF_NAMED  = 'https://api.scryfall.com/cards/named?exact=';
 const SF_COLL   = 'https://api.scryfall.com/cards/collection';
-const DELAY     = 80; // ms between Scryfall calls
+const DELAY     = 120; // ms between batch requests — well within Scryfall's 10 req/s
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
-const CACHE_KEY  = 'mtg_precons_v4';
+const CACHE_KEY  = 'mtg_precons_v5';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
 
@@ -603,16 +602,36 @@ function getCommanderNames(deck) {
   return { face: null, second: null };
 }
 
-async function fetchScryfallCard(name) {
-  if (sfCache[name] !== undefined) return sfCache[name];
-  try {
-    await sleep(DELAY);
-    const res = await fetch(SF_NAMED + encodeURIComponent(name));
-    if (!res.ok) { sfCache[name] = null; return null; }
-    const card = await res.json();
-    sfCache[name] = extractCardMeta(card);
-    return sfCache[name];
-  } catch { sfCache[name] = null; return null; }
+async function fetchCommandersBatch(names) {
+  // Split into batches of 75 (Scryfall collection limit)
+  const nameArr = [...names];
+  const batches = [];
+  for (let i = 0; i < nameArr.length; i += 75) batches.push(nameArr.slice(i, i+75));
+
+  let batchDone = 0;
+  for (const batch of batches) {
+    try {
+      setLoadStatus(`Fetching commander data (batch ${++batchDone}/${batches.length})…`);
+      await sleep(DELAY);
+      const res = await fetch(SF_COLL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifiers: batch.map(name => ({ name })) })
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      (data.data || []).forEach(card => {
+        sfCache[card.name] = extractCardMeta(card);
+      });
+      // Mark not-found as null so we don't retry them
+      (data.not_found || []).forEach(nf => {
+        if (nf.name) sfCache[nf.name] = null;
+      });
+    } catch { /* skip batch, will result in null entries */ }
+  }
+
+  // Apply results to all decks
+  allDecks.forEach(d => setColors(d));
 }
 
 function extractCardMeta(card) {
@@ -711,20 +730,12 @@ async function loadDecks() {
     });
 
     populateSetDropdown();
-    setLoadStatus(`Fetching commander data (0/${allDecks.length})…`);
+    setLoadStatus('Fetching commander data…');
 
     const names = new Set();
     allDecks.forEach(d => { if(d.face) names.add(d.face); if(d.second) names.add(d.second); });
 
-    let done = 0;
-    for (const name of names) {
-      await fetchScryfallCard(name);
-      done++;
-      allDecks.forEach(d => {
-        if ((d.face===name||d.second===name) && d.colors.length===0) setColors(d);
-      });
-      setLoadStatus(`Fetching commander data (${done}/${names.size})…`);
-    }
+    await fetchCommandersBatch(names);
 
     saveCache(allDecks);
     dataReady = true;
