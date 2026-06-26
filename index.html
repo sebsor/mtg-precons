@@ -39,6 +39,13 @@
     /* ── PAGE SYSTEM ─────────────────────────────────────────────── */
     .page { display: none; flex-direction: column; min-height: 100dvh; }
     .page.active { display: flex; }
+    /* Browse page must be exactly viewport height so only the grid scrolls,
+       not the whole page — this keeps the preview panel fixed in view */
+    #page-browse.active {
+      height: 100dvh;
+      min-height: unset;
+      overflow: hidden;
+    }
 
     /* ── SHARED HEADER ───────────────────────────────────────────── */
     .app-header {
@@ -259,44 +266,86 @@
     /* ─────────────────────────────────────────────────────────────
        DETAIL PAGE
     ───────────────────────────────────────────────────────────── */
+
+    /* Base rules — apply everywhere, overridden per breakpoint below */
     #page-detail { }
     .detail-hero {
-      position: relative; width: 100%;
-      aspect-ratio: 16/7; overflow: hidden;
-      background: #1c1710;
+      position: relative;
+      width: 100%;
       flex-shrink: 0;
+      background: #0e0b06;
+      overflow: hidden;
     }
-    .detail-hero img {
-      width: 100%; height: 100%; object-fit: cover; object-position: top center;
-    }
-    .detail-hero-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 30%, var(--bg) 100%);
-    }
-    .detail-hero-credit {
-      position: absolute; bottom: 6px; right: 8px;
-      font-size: 0.58rem; color: rgba(255,255,255,0.4);
-      font-family: sans-serif;
-    }
-
     .detail-columns {
       display: flex;
       flex: 1;
       overflow: hidden;
     }
-    .detail-body { padding: 0 14px 20px; flex: 1; overflow-y: auto; }
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px 20px;
+    }
+    .detail-preview-panel { /* inherits display:none from .card-preview-panel on mobile */ }
 
-    .detail-preview-panel {
-      /* inherits .card-preview-panel display:none on mobile */
+    /* Mobile: lock page, portrait card image, scrollable list below */
+    @media (max-width: 899px) {
+      #page-detail.active {
+        height: 100dvh;
+        min-height: unset;
+        overflow: hidden;
+      }
+      .detail-hero {
+        height: 42dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .detail-hero img {
+        height: 100%;
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
+        display: block;
+        transition: opacity 0.2s;
+      }
+      .detail-hero img.loading { opacity: 0; }
+      .detail-hero-overlay { display: none; }
+      .detail-hero-hint {
+        position: absolute;
+        bottom: 6px; left: 0; right: 0;
+        text-align: center;
+        font-size: 0.6rem;
+        color: rgba(255,255,255,0.35);
+        font-family: sans-serif;
+        pointer-events: none;
+      }
     }
 
+    /* Desktop: art crop banner + side preview panel */
     @media (min-width: 900px) {
+      .detail-hero {
+        aspect-ratio: 16/7;
+        background: #1c1710;
+      }
+      .detail-hero img {
+        width: 100%; height: 100%;
+        object-fit: cover; object-position: top center;
+      }
+      .detail-hero-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(to bottom, transparent 30%, var(--bg) 100%);
+      }
+      .detail-hero-credit {
+        position: absolute; bottom: 6px; right: 8px;
+        font-size: 0.58rem; color: rgba(255,255,255,0.4);
+        font-family: sans-serif;
+      }
+      .detail-hero-hint { display: none; }
       .detail-preview-panel {
-        /* Override height since detail page has hero above, not toolbar */
         height: auto;
         align-self: stretch;
-        position: sticky;
-        top: 0;
       }
       .detail-body { max-width: none; margin: 0; }
     }
@@ -353,6 +402,7 @@
     }
     .card-row-name { font-size: 0.8rem; color: var(--text); }
     .card-row-foil { font-size: 0.6rem; color: var(--gold-dim); margin-left: auto; flex-shrink: 0; }
+    .card-row.tapped { background: #2a2010; border-radius: 4px; }
 
     .detail-loading {
       text-align: center; padding: 24px;
@@ -391,9 +441,7 @@
         justify-content: center;
         width: 260px;
         flex-shrink: 0;
-        position: sticky;
-        top: 0;
-        height: calc(100dvh - 80px); /* 80px ≈ toolbar height */
+        height: 100%; /* fills the browse-body flex row */
         padding: 16px 12px;
         border-left: 1px solid var(--border);
         background: var(--surface);
@@ -558,6 +606,7 @@
   </div>
   <div class="detail-hero" id="detail-hero">
     <div class="art-placeholder">⚔</div>
+    <div class="detail-hero-hint">Tap a card below to preview · tap here to reset</div>
   </div>
   <div class="detail-columns">
     <div class="detail-body" id="detail-body">
@@ -884,8 +933,8 @@ function renderBrowse() {
     el.addEventListener('mouseleave', () => hideCardPreview());
   });
 
-  // Restore scroll position
-  window.scrollTo(0, browseScrollY);
+  // Restore scroll position inside the grid container
+  document.getElementById('browse-main').scrollTop = browseScrollY;
 }
 
 function cardHtml(d) {
@@ -914,30 +963,24 @@ function cardHtml(d) {
 //  DETAIL PAGE
 // ════════════════════════════════════════════════════════════════
 async function openDetail(deckName) {
-  browseScrollY = window.scrollY;
+  browseScrollY = document.getElementById('browse-main').scrollTop;
   const deck = allDecks.find(d => d.name === deckName);
   if (!deck) return;
 
   // Set header
   document.getElementById('detail-header-title').textContent = deck.name;
 
-  // Hero art
+  // Hero — set commander image as default
+  const commanderImg = deck.cardImg || deck.art || null;
+  setDetailHeroImage(commanderImg, deck.face, deck.artist, true);
+
+  // Tap hero to reset to commander image (mobile)
   const $hero = document.getElementById('detail-hero');
-  if (deck.cardImg) {
-    $hero.innerHTML = `
-      <img src="${esc(deck.cardImg)}" alt="${esc(deck.face)}" />
-      <div class="detail-hero-overlay"></div>
-      <div class="detail-hero-credit">Art © Wizards of the Coast${deck.artist ? ' · '+esc(deck.artist) : ''}</div>`;
-  } else if (deck.art) {
-    $hero.innerHTML = `
-      <img src="${esc(deck.art)}" alt="${esc(deck.face)}" />
-      <div class="detail-hero-overlay"></div>`;
-  } else {
-    $hero.innerHTML = `<div class="art-placeholder" style="font-size:3rem;height:100%;display:flex;align-items:center;justify-content:center">⚔</div>`;
-  }
+  $hero.onclick = () => setDetailHeroImage(commanderImg, deck.face, deck.artist, true);
 
   // Body: show loading while fetching card types
   const $body = document.getElementById('detail-body');
+  $body.scrollTop = 0;
   $body.innerHTML = `
     <div style="margin-top:14px">
       <div class="detail-title">${esc(deck.name)}</div>
@@ -961,6 +1004,50 @@ async function openDetail(deckName) {
   // Fetch card types
   const cards = await getDetailCards(deck);
   renderDetailList(cards, document.getElementById('detail-list-inner'));
+}
+
+function setDetailHeroImage(imgUrl, altText, artist, isCommander) {
+  const $hero = document.getElementById('detail-hero');
+  if (!imgUrl) {
+    $hero.innerHTML = `<div class="art-placeholder" style="font-size:3rem">⚔</div>
+      <div class="detail-hero-hint">Tap a card below to preview · tap here to reset</div>`;
+    return;
+  }
+  // Keep the hint element, replace/update the img
+  let $img = $hero.querySelector('img');
+  if (!$img) {
+    $img = document.createElement('img');
+    $hero.insertBefore($img, $hero.firstChild);
+  }
+  if ($img.src !== imgUrl) {
+    $img.classList.add('loading');
+    $img.src = imgUrl;
+    $img.alt = altText || '';
+    $img.onload = () => $img.classList.remove('loading');
+  }
+  // Desktop overlay + credit (only shown via CSS on desktop)
+  let $overlay = $hero.querySelector('.detail-hero-overlay');
+  if (!$overlay) {
+    $overlay = document.createElement('div');
+    $overlay.className = 'detail-hero-overlay';
+    $hero.appendChild($overlay);
+  }
+  let $credit = $hero.querySelector('.detail-hero-credit');
+  if (!$credit) {
+    $credit = document.createElement('div');
+    $credit.className = 'detail-hero-credit';
+    $hero.appendChild($credit);
+  }
+  $credit.textContent = isCommander && artist
+    ? `Art © Wizards of the Coast · ${artist}`
+    : '© Wizards of the Coast';
+  // Make sure hint stays
+  if (!$hero.querySelector('.detail-hero-hint')) {
+    const $hint = document.createElement('div');
+    $hint.className = 'detail-hero-hint';
+    $hint.textContent = 'Tap a card below to preview · tap here to reset';
+    $hero.appendChild($hint);
+  }
 }
 
 async function getDetailCards(deck) {
@@ -1047,14 +1134,25 @@ function renderDetailList(cards, $el) {
 
   $el.innerHTML = html || '<p style="color:var(--text-dim);font-size:0.8rem">Card data unavailable.</p>';
 
-  // Wire hover events for detail preview panel
+  // Wire hover (desktop) + tap (mobile) events
   $el.querySelectorAll('.card-row[data-img]').forEach(row => {
-    row.addEventListener('mouseenter', () => {
-      const img = row.dataset.img;
-      const name = row.dataset.name;
-      if (img) showDetailCardPreview(img, name);
-    });
+    const img  = row.dataset.img;
+    const name = row.dataset.name;
+    if (!img) return;
+
+    // Desktop hover → side panel
+    row.addEventListener('mouseenter', () => showDetailCardPreview(img, name));
     row.addEventListener('mouseleave', () => hideDetailCardPreview());
+
+    // Mobile tap → swap hero image
+    row.addEventListener('click', () => {
+      if (window.matchMedia('(max-width: 899px)').matches) {
+        setDetailHeroImage(img, name, null, false);
+        // Highlight the tapped row briefly
+        document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
+        row.classList.add('tapped');
+      }
+    });
   });
 }
 
@@ -1175,7 +1273,7 @@ document.getElementById('browse-back').addEventListener('click', () => {
 
 document.getElementById('detail-back').addEventListener('click', () => {
   showPage('page-browse');
-  window.scrollTo(0, browseScrollY);
+  document.getElementById('browse-main').scrollTop = browseScrollY;
 });
 
 // Start page color pips
