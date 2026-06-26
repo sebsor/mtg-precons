@@ -537,7 +537,7 @@ const SF_COLL   = 'https://api.scryfall.com/cards/collection';
 const DELAY     = 80; // ms between Scryfall calls
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
-const CACHE_KEY  = 'mtg_precons_v2';
+const CACHE_KEY  = 'mtg_precons_v4';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
 
@@ -845,7 +845,6 @@ function cardHtml(d) {
     </div>
     <div class="card-footer">
       <div class="color-pips">${pips}</div>
-      <span class="card-date">${d.releaseDate.slice(0,7)}</span>
     </div>
   </div>`;
 }
@@ -879,7 +878,7 @@ async function openDetail(deckName) {
   $body.innerHTML = `
     <div style="margin-top:14px">
       <div class="detail-title">${esc(deck.name)}</div>
-      <div class="detail-set">${esc(deck.setName)} · ${deck.releaseDate}</div>
+      <div class="detail-set">${esc(deck.setName)}</div>
       <div class="detail-colors">${pipHtml(deck.colors)}</div>
       <div class="detail-commanders">
         <h3>Commanders</h3>
