@@ -150,7 +150,36 @@
       display: flex; flex-direction: column; gap: 10px;
     }
 
-    .btn-primary {
+    .start-loading-state {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+    .first-load-msg {
+      text-align: center;
+      max-width: 280px;
+    }
+    .first-load-title {
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .first-load-sub {
+      font-size: 0.75rem;
+      color: var(--gold-dim);
+      font-family: monospace;
+      margin-bottom: 16px;
+      min-height: 1.2em;
+    }
+    .first-load-note {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+    }
       width: 100%; padding: 13px;
       background: linear-gradient(135deg, #a07830 0%, var(--gold) 50%, #a07830 100%);
       border: none; border-radius: var(--radius);
@@ -518,7 +547,18 @@
     <p>All official Commander preconstructed decks</p>
   </div>
 
-  <div class="start-filters">
+  <!-- Shown only on first load (no cache) -->
+  <div class="start-loading-state" id="start-loading-state">
+    <div class="first-load-msg">
+      <div class="mini-spinner" style="width:20px;height:20px;border-width:3px;margin:0 auto 14px"></div>
+      <p class="first-load-title">Fetching decks for the first time…</p>
+      <p class="first-load-sub" id="load-status-text">Loading decks…</p>
+      <p class="first-load-note">This only happens once. Future visits load instantly from cache.</p>
+    </div>
+  </div>
+
+  <!-- Shown when data is ready (or cached) -->
+  <div class="start-filters" id="start-filters" style="display:none">
 
     <div class="filter-group">
       <label>Search</label>
@@ -555,12 +595,12 @@
 
   </div>
 
-  <div class="start-actions">
+  <div class="start-actions" id="start-actions" style="display:none">
     <div class="load-status" id="load-status">
-      <span class="mini-spinner"></span>
-      <span id="load-status-text">Loading decks…</span>
+      <span class="mini-spinner" style="display:none"></span>
+      <span id="load-status-cached"></span>
     </div>
-    <button class="btn-primary" id="browse-btn" disabled>Browse Decks</button>
+    <button class="btn-primary" id="browse-btn">Browse Decks</button>
   </div>
 </div>
 
@@ -617,7 +657,6 @@
   </div>
   <div class="detail-hero" id="detail-hero">
     <div class="art-placeholder">⚔</div>
-    <div class="detail-hero-hint">Tap a card to preview · tap image to reset</div>
   </div>
   <div class="detail-credit-bar" id="detail-credit-bar"></div>
   <div class="detail-columns">
@@ -783,12 +822,11 @@ async function loadDecks() {
     allDecks = cached.decks;
     populateSetDropdown();
     dataReady = true;
-    setLoadStatus(`${allDecks.length} decks · cached ${cacheAge(cached.ts)}`, false, true);
-    document.getElementById('browse-btn').disabled = false;
+    showStartReady(cached.ts);
     return;
   }
 
-  // 2. No valid cache — fetch everything
+  // 2. No valid cache — fetch everything, show loading state
   setLoadStatus('Fetching deck list…', true);
   try {
     const res = await fetch(DECKS_URL);
@@ -811,12 +849,12 @@ async function loadDecks() {
         releaseDate: d.release_date || '',
         face, second,
         rawCards: [...(d.cards||[]), ...(d.commander||[])],
-        colors: [], art: null, artist: null,
+        colors: [], art: null, artist: null, cardImg: null,
       };
     });
 
     populateSetDropdown();
-    setLoadStatus(`Fetching commander data (0/${allDecks.length})…`, true);
+    setLoadStatus(`Fetching commander data (0/${allDecks.length})…`);
 
     const names = new Set();
     allDecks.forEach(d => { if(d.face) names.add(d.face); if(d.second) names.add(d.second); });
@@ -828,42 +866,49 @@ async function loadDecks() {
       allDecks.forEach(d => {
         if ((d.face===name||d.second===name) && d.colors.length===0) setColors(d);
       });
-      setLoadStatus(`Fetching commander data (${done}/${names.size})…`, true);
+      setLoadStatus(`Fetching commander data (${done}/${names.size})…`);
     }
 
-    // Save to cache (strip rawCards since they're large; re-fetch on detail open anyway)
-    // Actually keep rawCards — needed for deck detail. localStorage limit is ~5MB,
-    // and our data is well under that.
     saveCache(allDecks);
-
     dataReady = true;
-    setLoadStatus(`${allDecks.length} decks ready`, false);
-    document.getElementById('browse-btn').disabled = false;
+    showStartReady(null); // no cache timestamp — freshly loaded
 
   } catch(e) {
-    setLoadStatus('Failed to load: '+e.message, false);
+    const $sub = document.getElementById('load-status-text');
+    if ($sub) $sub.textContent = 'Failed to load: ' + e.message;
   }
 }
 
 function setLoadStatus(text, spinning, showRefresh = false) {
-  document.getElementById('load-status-text').textContent = text;
-  const spinner = document.querySelector('#load-status .mini-spinner');
-  if (spinner) spinner.style.display = spinning ? '' : 'none';
+  // Update the first-load progress text (visible during fetch)
+  const $sub = document.getElementById('load-status-text');
+  if ($sub) $sub.textContent = text;
+}
 
-  // Show/hide the refresh link
-  let $refresh = document.getElementById('cache-refresh-btn');
-  if (showRefresh && !$refresh) {
-    $refresh = document.createElement('button');
-    $refresh.id = 'cache-refresh-btn';
+function showStartReady(cacheInfo) {
+  // Hide loading state, reveal filters + browse button
+  document.getElementById('start-loading-state').style.display = 'none';
+  document.getElementById('start-filters').style.display = '';
+  document.getElementById('start-actions').style.display = '';
+
+  // Show cache age or nothing in the status area
+  const $cached = document.getElementById('load-status-cached');
+  if ($cached && cacheInfo) {
+    $cached.textContent = `${allDecks.length} decks · cached ${cacheAge(cacheInfo)}`;
+  } else if ($cached) {
+    $cached.textContent = `${allDecks.length} decks loaded`;
+  }
+
+  // Show refresh link if using cache
+  if (cacheInfo) {
+    const $refresh = document.createElement('button');
     $refresh.textContent = 'Refresh';
-    $refresh.style.cssText = 'background:none;border:none;color:var(--gold-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;';
+    $refresh.style.cssText = 'background:none;border:none;color:var(--gold-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:0 0 0 6px;font-family:inherit;';
     $refresh.addEventListener('click', () => {
       try { localStorage.removeItem(CACHE_KEY); } catch {}
       location.reload();
     });
     document.getElementById('load-status').appendChild($refresh);
-  } else if (!showRefresh && $refresh) {
-    $refresh.remove();
   }
 }
 
@@ -1010,7 +1055,7 @@ async function openDetail(deckName) {
       <div class="detail-list">
         <h3>Decklist</h3>
         <div id="detail-list-inner">
-          <div class="detail-loading"><div class="spinner"></div><span>Fetching card types…</span></div>
+          <div class="detail-loading"><div class="spinner"></div><span>Fetching cards…</span></div>
         </div>
       </div>
     </div>`;
@@ -1054,10 +1099,6 @@ function setDetailHeroImage(imgUrl, altText, artist, mode) {
     const $ov = document.createElement('div');
     $ov.className = 'detail-hero-overlay';
     $hero.appendChild($ov);
-    const $hint = document.createElement('div');
-    $hint.className = 'detail-hero-hint';
-    $hint.textContent = 'Tap a card to preview · tap image to reset';
-    $hero.appendChild($hint);
   }
 
   if ($img.src !== imgUrl) {
