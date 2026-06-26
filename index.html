@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1a1208" />
+  <meta name="theme-color" content="#110e07" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Precons" />
@@ -12,639 +12,918 @@
   <title>MTG Commander Precons</title>
   <style>
     :root {
-      --bg:        #110e07;
-      --surface:   #1c1710;
-      --card-bg:   #221c10;
-      --border:    #3a2e18;
-      --gold:      #c9a84c;
-      --gold-dim:  #7a6330;
-      --text:      #e8dfc8;
-      --text-dim:  #8a7d60;
-      --accent:    #d4a017;
-      --w: #f9fafb; --u: #3b82f6; --b: #a855f7; --r: #ef4444; --g: #22c55e; --c: #9ca3af;
-      --pip-size: 18px;
+      --bg:       #110e07;
+      --surface:  #1c1710;
+      --card-bg:  #1f1a0f;
+      --border:   #3a2e18;
+      --gold:     #c9a84c;
+      --gold-dim: #7a6330;
+      --text:     #e8dfc8;
+      --text-dim: #8a7d60;
+      --accent:   #d4a017;
+      --pip-W: #f9fafb; --pip-U: #3b82f6; --pip-B: #9333ea;
+      --pip-R: #ef4444; --pip-G: #16a34a; --pip-C: #9ca3af;
+      --pip-size: 20px;
+      --radius: 8px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    html, body { height: 100%; }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'Georgia', serif;
-      min-height: 100dvh;
+      overflow-x: hidden;
     }
 
-    /* ── HEADER ── */
-    header {
+    /* ── PAGE SYSTEM ─────────────────────────────────────────────── */
+    .page { display: none; flex-direction: column; min-height: 100dvh; }
+    .page.active { display: flex; }
+
+    /* ── SHARED HEADER ───────────────────────────────────────────── */
+    .app-header {
       background: linear-gradient(180deg, #2a1f08 0%, #1a1208 100%);
       border-bottom: 1px solid var(--gold-dim);
-      padding: 14px 16px 10px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      padding: 12px 16px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 10px;
     }
-
-    .header-top {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .header-top h1 {
-      font-size: 1.15rem;
-      font-weight: normal;
-      letter-spacing: 0.08em;
+    .app-header h1 {
+      flex: 1;
+      font-size: 1rem; font-weight: normal;
+      letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--gold);
-      text-transform: uppercase;
-      flex: 1;
     }
-
-    .deck-count {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      font-family: monospace;
-      background: #2a2010;
-      padding: 3px 7px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
+    .back-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-dim); border-radius: 6px;
+      padding: 5px 10px; font-size: 0.8rem;
+      cursor: pointer; font-family: inherit;
     }
+    .back-btn:active { opacity: 0.7; }
 
-    /* ── FILTERS ── */
-    .filters {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .search-wrap {
-      flex: 1;
-      min-width: 140px;
-    }
-
-    #search {
-      width: 100%;
-      background: #2a2010;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.8rem;
-      padding: 6px 10px;
-      outline: none;
-      font-family: inherit;
-    }
-    #search:focus { border-color: var(--gold-dim); }
-    #search::placeholder { color: var(--text-dim); }
-
-    .color-filters {
-      display: flex;
-      gap: 4px;
-    }
-
+    /* ── PILL / PIP BUTTONS ──────────────────────────────────────── */
     .pip-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
+      width: 28px; height: 28px; border-radius: 50%;
       border: 2px solid transparent;
-      cursor: pointer;
-      font-size: 0.6rem;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s, border-color 0.1s;
-      color: #000;
-      user-select: none;
+      cursor: pointer; font-size: 0.6rem; font-weight: bold;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: transform 0.1s, border-color 0.15s;
+      color: #000; user-select: none; flex-shrink: 0;
     }
-    .pip-btn:active { transform: scale(0.9); }
-    .pip-btn.active { border-color: #fff; }
-    .pip-btn[data-c="W"] { background: var(--w); }
-    .pip-btn[data-c="U"] { background: var(--u); color: #fff; }
-    .pip-btn[data-c="B"] { background: var(--b); color: #fff; }
-    .pip-btn[data-c="R"] { background: var(--r); color: #fff; }
-    .pip-btn[data-c="G"] { background: var(--g); }
-    .pip-btn[data-c="C"] { background: var(--c); }
-
-    /* sort */
-    #sort-select {
-      background: #2a2010;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.75rem;
-      padding: 5px 7px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    /* ── MAIN ── */
-    main {
-      padding: 12px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    /* ── SET GROUP ── */
-    .set-group { margin-bottom: 24px; }
-
-    .set-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .set-name {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--gold-dim);
-    }
-
-    .set-year {
-      font-size: 0.68rem;
-      color: var(--text-dim);
-      font-family: monospace;
-    }
-
-    .set-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 8px;
-    }
-
-    /* ── DECK CARD ── */
-    .deck-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.15s;
-      position: relative;
-    }
-    .deck-card:hover { border-color: var(--gold-dim); }
-
-    .card-art {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      object-position: top center;
-      display: block;
-      background: #2a2010;
-    }
-
-    .card-art-placeholder {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: linear-gradient(135deg, #2a2010 0%, #1c1710 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--gold-dim);
-      font-size: 1.6rem;
-    }
-
-    .card-body {
-      padding: 9px 10px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .card-deck-name {
-      font-size: 0.85rem;
-      color: var(--gold);
-      line-height: 1.2;
-    }
-
-    .card-commander {
-      font-size: 0.72rem;
-      color: var(--text);
-      line-height: 1.4;
-    }
-
-    .card-commander .label {
-      color: var(--text-dim);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      display: block;
-      margin-bottom: 1px;
-    }
-
-    .card-commander .cmd-name {
-      display: block;
-    }
-
-    .card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 5px 10px 8px;
-    }
-
-    .color-pips {
-      display: flex;
-      gap: 3px;
-    }
+    .pip-btn:active { transform: scale(0.88); }
+    .pip-btn.active { border-color: #fff; box-shadow: 0 0 0 1px #fff4; }
+    .pip-btn[data-c="W"] { background: var(--pip-W); }
+    .pip-btn[data-c="U"] { background: var(--pip-U); color: #fff; }
+    .pip-btn[data-c="B"] { background: var(--pip-B); color: #fff; }
+    .pip-btn[data-c="R"] { background: var(--pip-R); color: #fff; }
+    .pip-btn[data-c="G"] { background: var(--pip-G); color: #fff; }
+    .pip-btn[data-c="C"] { background: var(--pip-C); }
 
     .pip {
-      width: var(--pip-size);
-      height: var(--pip-size);
-      border-radius: 50%;
-      border: 1.5px solid rgba(0,0,0,0.4);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.5rem;
-      font-weight: bold;
-      color: #000;
-      flex-shrink: 0;
+      width: var(--pip-size); height: var(--pip-size);
+      border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.35);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.5rem; font-weight: bold; color: #000; flex-shrink: 0;
     }
-    .pip.W { background: var(--w); }
-    .pip.U { background: var(--u); color: #fff; }
-    .pip.B { background: var(--b); color: #fff; }
-    .pip.R { background: var(--r); color: #fff; }
-    .pip.G { background: var(--g); }
-    .pip.C { background: var(--c); }
+    .pip.W { background: var(--pip-W); }
+    .pip.U { background: var(--pip-U); color: #fff; }
+    .pip.B { background: var(--pip-B); color: #fff; }
+    .pip.R { background: var(--pip-R); color: #fff; }
+    .pip.G { background: var(--pip-G); color: #fff; }
+    .pip.C { background: var(--pip-C); }
 
-    .release-date {
-      font-size: 0.62rem;
-      color: var(--text-dim);
-      font-family: monospace;
-    }
+    /* ─────────────────────────────────────────────────────────────
+       START PAGE
+    ───────────────────────────────────────────────────────────── */
+    #page-start { justify-content: flex-start; }
 
-    /* ── LOADING / ERROR / EMPTY ── */
-    .status {
+    .start-hero {
       text-align: center;
-      padding: 60px 20px;
-      color: var(--text-dim);
+      padding: 32px 20px 24px;
+      background: linear-gradient(180deg, #2a1f08 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
     }
-    .status .icon { font-size: 2rem; margin-bottom: 10px; }
-    .status p { font-size: 0.85rem; }
+    .start-hero .rune { font-size: 2.8rem; line-height: 1; margin-bottom: 8px; }
+    .start-hero h2 {
+      font-size: 1.3rem; font-weight: normal;
+      color: var(--gold); letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 4px;
+    }
+    .start-hero p { font-size: 0.8rem; color: var(--text-dim); }
 
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid var(--border);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 12px;
+    .start-filters {
+      padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 16px;
+      flex: 1;
+    }
+
+    .filter-group label {
+      display: block; font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gold-dim); margin-bottom: 7px;
+    }
+    .filter-group input,
+    .filter-group select {
+      width: 100%;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-size: 0.88rem; padding: 10px 12px;
+      outline: none; font-family: inherit;
+      -webkit-appearance: none;
+    }
+    .filter-group input:focus,
+    .filter-group select:focus { border-color: var(--gold-dim); }
+    .filter-group input::placeholder { color: var(--text-dim); }
+
+    .color-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .start-actions {
+      padding: 0 16px calc(16px + var(--safe-bottom));
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .btn-primary {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, #a07830 0%, var(--gold) 50%, #a07830 100%);
+      border: none; border-radius: var(--radius);
+      color: #1a1208; font-size: 0.95rem; font-weight: bold;
+      cursor: pointer; font-family: inherit;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:disabled { opacity: 0.45; cursor: default; }
+    .btn-primary:not(:disabled):active { opacity: 0.85; }
+
+    .load-status {
+      text-align: center; font-size: 0.75rem;
+      color: var(--text-dim); display: flex;
+      align-items: center; justify-content: center; gap: 7px;
+    }
+    .mini-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── HIDDEN ── */
-    .hidden { display: none !important; }
+    /* ─────────────────────────────────────────────────────────────
+       BROWSE PAGE
+    ───────────────────────────────────────────────────────────── */
+    #page-browse { }
+    .browse-toolbar {
+      background: linear-gradient(180deg, #2a1f08 0%, #1a1208 100%);
+      border-bottom: 1px solid var(--gold-dim);
+      padding: 8px 12px;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .browse-toolbar-row {
+      display: flex; align-items: center; gap: 6px;
+    }
+    #browse-search {
+      flex: 1; background: #2a2010; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 0.82rem;
+      padding: 7px 10px; outline: none; font-family: inherit;
+    }
+    #browse-search::placeholder { color: var(--text-dim); }
+    #browse-search:focus { border-color: var(--gold-dim); }
+    #sort-select {
+      background: #2a2010; border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 0.75rem;
+      padding: 6px 7px; outline: none; cursor: pointer;
+      -webkit-appearance: none; flex-shrink: 0;
+    }
+    .deck-count-badge {
+      font-size: 0.68rem; color: var(--text-dim);
+      font-family: monospace; background: #2a2010;
+      padding: 3px 8px; border-radius: 10px;
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
 
-    @media (max-width: 400px) {
-      .set-cards { grid-template-columns: 1fr 1fr; gap: 6px; }
-      .pip { width: 15px; height: 15px; }
+    /* grid */
+    .browse-main { padding: 10px; flex: 1; }
+    .set-group { margin-bottom: 20px; }
+    .set-header {
+      display: flex; align-items: baseline; gap: 8px;
+      margin-bottom: 8px; padding-bottom: 5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .set-name { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-dim); }
+    .set-year { font-size: 0.65rem; color: var(--text-dim); font-family: monospace; }
+    .set-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 7px; }
+
+    /* deck card */
+    .deck-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      display: flex; flex-direction: column;
+      cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .deck-card:active { transform: scale(0.97); border-color: var(--gold-dim); }
+
+    .card-art-wrap {
+      width: 100%; aspect-ratio: 16/9; overflow: hidden;
+      background: linear-gradient(135deg, #2a2010 0%, #1c1710 100%);
+      position: relative;
+    }
+    .card-art-wrap img {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center;
+      display: block; transition: opacity 0.3s;
+    }
+    .card-art-wrap img.loading { opacity: 0; }
+    .art-placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold-dim); font-size: 1.4rem;
+    }
+
+    .card-body { padding: 7px 9px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .card-deck-name { font-size: 0.8rem; color: var(--gold); line-height: 1.2; }
+    .card-cmd { font-size: 0.68rem; color: var(--text-dim); line-height: 1.3; }
+    .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 9px 7px;
+    }
+    .color-pips { display: flex; gap: 3px; }
+    .card-date { font-size: 0.6rem; color: var(--text-dim); font-family: monospace; }
+
+    /* empty/error */
+    .status-msg {
+      text-align: center; padding: 50px 20px;
+      color: var(--text-dim); font-size: 0.85rem;
+    }
+    .status-msg .icon { font-size: 2rem; margin-bottom: 10px; }
+
+    /* ─────────────────────────────────────────────────────────────
+       DETAIL PAGE
+    ───────────────────────────────────────────────────────────── */
+    #page-detail { }
+    .detail-hero {
+      position: relative; width: 100%;
+      aspect-ratio: 16/7; overflow: hidden;
+      background: #1c1710;
+      flex-shrink: 0;
+    }
+    .detail-hero img {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center;
+    }
+    .detail-hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 30%, var(--bg) 100%);
+    }
+    .detail-hero-credit {
+      position: absolute; bottom: 6px; right: 8px;
+      font-size: 0.58rem; color: rgba(255,255,255,0.4);
+      font-family: sans-serif;
+    }
+
+    .detail-body { padding: 0 14px 20px; flex: 1; overflow-y: auto; }
+
+    .detail-title {
+      font-size: 1.25rem; color: var(--gold);
+      margin-bottom: 2px; line-height: 1.2;
+    }
+    .detail-set { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px; }
+    .detail-colors { display: flex; gap: 5px; margin-bottom: 14px; }
+
+    .detail-commanders { margin-bottom: 16px; }
+    .detail-commanders h3 {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gold-dim); margin-bottom: 6px;
+    }
+    .commander-entry {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; background: var(--card-bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      margin-bottom: 5px;
+    }
+    .commander-label {
+      font-size: 0.62rem; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      width: 60px; flex-shrink: 0;
+    }
+    .commander-name { font-size: 0.88rem; color: var(--text); }
+
+    /* card list */
+    .detail-list h3 {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--gold-dim); margin-bottom: 8px;
+    }
+    .type-group { margin-bottom: 14px; }
+    .type-group-header {
+      display: flex; align-items: baseline; gap: 7px;
+      padding: 3px 0 4px; border-bottom: 1px solid var(--border);
+      margin-bottom: 5px;
+    }
+    .type-group-name { font-size: 0.72rem; color: var(--text); }
+    .type-group-count {
+      font-size: 0.65rem; color: var(--text-dim);
+      font-family: monospace;
+    }
+    .card-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 0; border-bottom: 1px solid #2a2010;
+    }
+    .card-row:last-child { border-bottom: none; }
+    .card-row-count {
+      font-size: 0.7rem; color: var(--gold-dim);
+      font-family: monospace; width: 16px; text-align: right; flex-shrink: 0;
+    }
+    .card-row-name { font-size: 0.8rem; color: var(--text); }
+    .card-row-foil { font-size: 0.6rem; color: var(--gold-dim); margin-left: auto; flex-shrink: 0; }
+
+    .detail-loading {
+      text-align: center; padding: 24px;
+      color: var(--text-dim); font-size: 0.8rem;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+
+    /* responsive */
+    @media (min-width: 600px) {
+      .set-cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+      .detail-body { max-width: 700px; margin: 0 auto; }
+    }
+    @media (max-width: 360px) {
+      .set-cards { grid-template-columns: 1fr 1fr; }
+      --pip-size: 16px;
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="header-top">
-    <h1>⚔ Commander Precons</h1>
-    <span class="deck-count" id="deck-count">—</span>
+<!-- ══════════════════════════════════════════════════════════════
+     START PAGE
+══════════════════════════════════════════════════════════════ -->
+<div id="page-start" class="page active">
+  <div class="start-hero">
+    <div class="rune">⚔</div>
+    <h2>Commander Precons</h2>
+    <p>All official Commander preconstructed decks</p>
   </div>
-  <div class="filters">
-    <div class="search-wrap">
-      <input id="search" type="search" placeholder="Search deck or commander…" autocomplete="off" />
-    </div>
-    <div class="color-filters" id="color-filters">
-      <button class="pip-btn" data-c="W" title="White">W</button>
-      <button class="pip-btn" data-c="U" title="Blue">U</button>
-      <button class="pip-btn" data-c="B" title="Black">B</button>
-      <button class="pip-btn" data-c="R" title="Red">R</button>
-      <button class="pip-btn" data-c="G" title="Green">G</button>
-      <button class="pip-btn" data-c="C" title="Colorless">C</button>
-    </div>
-    <select id="sort-select">
-      <option value="date-desc">Newest first</option>
-      <option value="date-asc">Oldest first</option>
-      <option value="name">A – Z</option>
-    </select>
-  </div>
-</header>
 
-<main id="main">
-  <div class="status" id="status-loading">
-    <div class="spinner"></div>
-    <p>Fetching decks…</p>
+  <div class="start-filters">
+
+    <div class="filter-group">
+      <label>Search</label>
+      <input type="search" id="start-search" placeholder="Deck name, commander, set…" autocomplete="off" />
+    </div>
+
+    <div class="filter-group">
+      <label>Color identity</label>
+      <div class="color-row" id="start-color-row">
+        <button class="pip-btn" data-c="W">W</button>
+        <button class="pip-btn" data-c="U">U</button>
+        <button class="pip-btn" data-c="B">B</button>
+        <button class="pip-btn" data-c="R">R</button>
+        <button class="pip-btn" data-c="G">G</button>
+        <button class="pip-btn" data-c="C">C</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Set</label>
+      <select id="start-set">
+        <option value="">All sets</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Sort</label>
+      <select id="start-sort">
+        <option value="date-desc">Newest first</option>
+        <option value="date-asc">Oldest first</option>
+        <option value="name">A – Z</option>
+      </select>
+    </div>
+
   </div>
-  <div class="status hidden" id="status-error">
-    <div class="icon">⚠</div>
-    <p id="error-msg">Something went wrong. Check your connection and reload.</p>
+
+  <div class="start-actions">
+    <div class="load-status" id="load-status">
+      <span class="mini-spinner"></span>
+      <span id="load-status-text">Loading decks…</span>
+    </div>
+    <button class="btn-primary" id="browse-btn" disabled>Browse Decks</button>
   </div>
-  <div class="status hidden" id="status-empty">
-    <div class="icon">🔍</div>
-    <p>No decks match your filters.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     BROWSE PAGE
+══════════════════════════════════════════════════════════════ -->
+<div id="page-browse" class="page">
+  <div class="browse-toolbar">
+    <div class="browse-toolbar-row">
+      <button class="back-btn" id="browse-back">← Filters</button>
+      <input id="browse-search" type="search" placeholder="Search…" autocomplete="off" />
+      <select id="sort-select">
+        <option value="date-desc">New</option>
+        <option value="date-asc">Old</option>
+        <option value="name">A–Z</option>
+      </select>
+      <span class="deck-count-badge" id="deck-count">—</span>
+    </div>
+    <div class="browse-toolbar-row">
+      <div id="browse-color-row" style="display:flex;gap:5px">
+        <button class="pip-btn" data-c="W">W</button>
+        <button class="pip-btn" data-c="U">U</button>
+        <button class="pip-btn" data-c="B">B</button>
+        <button class="pip-btn" data-c="R">R</button>
+        <button class="pip-btn" data-c="G">G</button>
+        <button class="pip-btn" data-c="C">C</button>
+      </div>
+    </div>
   </div>
-  <div id="deck-grid"></div>
-</main>
+  <div class="browse-main" id="browse-main">
+    <div class="status-msg"><div class="icon">⚔</div><p>Loading…</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     DETAIL PAGE
+══════════════════════════════════════════════════════════════ -->
+<div id="page-detail" class="page">
+  <div class="app-header">
+    <button class="back-btn" id="detail-back">← Decks</button>
+    <h1 id="detail-header-title">Deck</h1>
+  </div>
+  <div class="detail-hero" id="detail-hero">
+    <div class="art-placeholder">⚔</div>
+  </div>
+  <div class="detail-body" id="detail-body">
+    <div class="detail-loading"><div class="spinner"></div><span>Loading deck list…</span></div>
+  </div>
+</div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════════════
 const DECKS_URL = 'https://raw.githubusercontent.com/taw/magic-preconstructed-decks-data/master/decks_v2.json';
-const SCRYFALL_NAMED = 'https://api.scryfall.com/cards/named?exact=';
-const SCRYFALL_DELAY_MS = 80; // stay well under their 10 req/s limit
+const SF_NAMED  = 'https://api.scryfall.com/cards/named?exact=';
+const SF_COLL   = 'https://api.scryfall.com/cards/collection';
+const DELAY     = 80; // ms between Scryfall calls
 
-// ── STATE ──────────────────────────────────────────────────────────────────
-let allDecks = [];          // processed decks
-let scryfallCache = {};     // name -> { colors, art }
+const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
+const COLOR_ORDER = ['W','U','B','R','G'];
+
+// ════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════
+let allDecks = [];        // [{name, setName, releaseDate, face, second, rawCards, colors, art, artist, copyright}]
+let sfCache  = {};        // cardName -> {colors, art, artist, copyright}
+let detailCardCache = {}; // deckName -> [{name, type_line, count, foil}...]
+
 let activeColors = new Set();
-let sortMode = 'date-desc';
-let searchTerm = '';
+let sortMode     = 'date-desc';
+let searchTerm   = '';
+let activeSet    = '';
+let browseScrollY = 0;
+let dataReady    = false;
 
-// ── FETCH & PROCESS ────────────────────────────────────────────────────────
-async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// ════════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════════
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function colorName(c) { return {W:'White',U:'Blue',B:'Black',R:'Red',G:'Green',C:'Colorless'}[c]||c; }
+function getYear(d) { return (d||'').slice(0,4); }
 
-async function fetchScryfallCard(name) {
-  if (scryfallCache[name] !== undefined) return scryfallCache[name];
-  try {
-    await sleep(SCRYFALL_DELAY_MS);
-    const res = await fetch(SCRYFALL_NAMED + encodeURIComponent(name));
-    if (!res.ok) { scryfallCache[name] = null; return null; }
-    const card = await res.json();
-    const colors = card.color_identity || [];
-    // Art: prefer card_faces[0] for DFCs, else image_uris
-    let art = null;
-    if (card.card_faces && card.card_faces[0]?.image_uris) {
-      art = card.card_faces[0].image_uris.art_crop;
-    } else if (card.image_uris) {
-      art = card.image_uris.art_crop;
-    }
-    scryfallCache[name] = { colors, art };
-    return scryfallCache[name];
-  } catch (e) {
-    scryfallCache[name] = null;
-    return null;
+function classifyType(type_line) {
+  if (!type_line) return 'Other';
+  for (const t of TYPE_ORDER) {
+    if (t === 'Other') continue;
+    if (type_line.includes(t)) return t;
   }
+  return 'Other';
 }
 
+// ════════════════════════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id !== 'page-browse') window.scrollTo(0,0);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DATA LOADING
+// ════════════════════════════════════════════════════════════════
 function getCommanderNames(deck) {
   const cmds = deck.commander || [];
   const disp = deck.displayCommander || [];
-
-  // Modern decks: commander[] has 1-2 entries (face + partner)
-  if (cmds.length >= 2) {
-    return { face: cmds[0].name, second: cmds[1].name };
-  }
+  if (cmds.length >= 2) return { face: cmds[0].name, second: cmds[1].name };
   if (cmds.length === 1) {
-    // Check displayCommander for a different second commander
-    // (old 2011-2013 decks have 3 in disp; modern partner decks have 1 in disp)
-    const dispNames = disp.map(c => c.name).filter(n => n !== cmds[0].name);
-    if (dispNames.length === 1) {
-      // Only one different name → true partner / second commander
-      return { face: cmds[0].name, second: dispNames[0] };
-    }
-    // 0 or 2+ different → old multi-commander or just foil version → ignore disp
-    return { face: cmds[0].name, second: null };
+    const dispOther = disp.map(c=>c.name).filter(n=>n!==cmds[0].name);
+    return { face: cmds[0].name, second: dispOther.length===1 ? dispOther[0] : null };
   }
   return { face: null, second: null };
 }
 
+async function fetchScryfallCard(name) {
+  if (sfCache[name] !== undefined) return sfCache[name];
+  try {
+    await sleep(DELAY);
+    const res = await fetch(SF_NAMED + encodeURIComponent(name));
+    if (!res.ok) { sfCache[name] = null; return null; }
+    const card = await res.json();
+    sfCache[name] = extractCardMeta(card);
+    return sfCache[name];
+  } catch { sfCache[name] = null; return null; }
+}
+
+function extractCardMeta(card) {
+  const colors = card.color_identity || [];
+  let art = null, artist = null, copyright = null;
+  if (card.card_faces && card.card_faces[0]?.image_uris) {
+    art = card.card_faces[0].image_uris.art_crop;
+  } else if (card.image_uris) {
+    art = card.image_uris.art_crop;
+  }
+  artist = card.artist || null;
+  copyright = card.set_name ? `© Wizards of the Coast` : null;
+  return { colors, art, artist, copyright };
+}
+
+function setColors(deck) {
+  const f = deck.face ? sfCache[deck.face] : null;
+  const s = deck.second ? sfCache[deck.second] : null;
+  const set = new Set();
+  (f?.colors||[]).forEach(c=>set.add(c));
+  (s?.colors||[]).forEach(c=>set.add(c));
+  deck.colors = set.size===0 ? ['C'] : COLOR_ORDER.filter(c=>set.has(c));
+  deck.art = f?.art || null;
+  deck.artist = f?.artist || null;
+}
+
 async function loadDecks() {
+  setLoadStatus('Fetching deck list…', true);
   try {
     const res = await fetch(DECKS_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error('HTTP '+res.status);
     const raw = await res.json();
 
-    // Filter: Commander Deck type, no Collector's Editions, no MTGO
     const filtered = raw.filter(d =>
       d.type === 'Commander Deck' &&
-      !d.name.includes("Collector") &&
-      !d.set_name?.includes("MTGO")
+      !d.name.includes('Collector') &&
+      !(d.set_name||'').includes('MTGO')
     );
 
-    // Sort by date descending first so we fetch face commanders of newest sets first
-    filtered.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
+    // Sort newest-first consistently
+    filtered.sort((a,b) => (b.release_date||'').localeCompare(a.release_date||''));
 
-    // Build deck objects (without Scryfall data yet)
     allDecks = filtered.map(d => {
-      const { face, second } = getCommanderNames(d);
+      const {face, second} = getCommanderNames(d);
       return {
         name: d.name,
         setName: d.set_name || '',
         releaseDate: d.release_date || '',
-        face,
-        second,
-        colors: [],   // filled by Scryfall
-        art: null,    // filled by Scryfall
+        face, second,
+        rawCards: [...(d.cards||[]), ...(d.commander||[])],
+        colors: [], art: null, artist: null,
       };
     });
 
-    // Show cards immediately (no art/colors yet)
-    render();
+    // Populate set dropdown on start page
+    populateSetDropdown();
 
-    // Now enrich with Scryfall data, rendering after each fetch
-    await enrichDecks();
+    setLoadStatus(`Fetching commander data (0/${allDecks.length})…`, true);
 
-  } catch (e) {
-    showError(e.message);
-  }
-}
+    // Enrich with Scryfall data for commanders
+    const names = new Set();
+    allDecks.forEach(d => { if(d.face) names.add(d.face); if(d.second) names.add(d.second); });
 
-async function enrichDecks() {
-  // Collect unique commander names to fetch
-  const names = new Set();
-  allDecks.forEach(d => {
-    if (d.face) names.add(d.face);
-    if (d.second) names.add(d.second);
-  });
-
-  let fetched = 0;
-  for (const name of names) {
-    await fetchScryfallCard(name);
-    fetched++;
-    // Re-apply Scryfall data to decks and re-render every 10 cards
-    if (fetched % 10 === 0 || fetched === names.size) {
-      applyScryfall();
-      render();
+    let done = 0;
+    for (const name of names) {
+      await fetchScryfallCard(name);
+      done++;
+      allDecks.forEach(d => {
+        if ((d.face===name||d.second===name) && d.colors.length===0) setColors(d);
+      });
+      setLoadStatus(`Fetching commander data (${done}/${names.size})…`, true);
     }
+
+    dataReady = true;
+    setLoadStatus(`${allDecks.length} decks ready`, false);
+    document.getElementById('browse-btn').disabled = false;
+
+  } catch(e) {
+    setLoadStatus('Failed to load: '+e.message, false);
   }
 }
 
-function applyScryfall() {
-  allDecks.forEach(d => {
-    const faceData = d.face ? scryfallCache[d.face] : null;
-    const secData = d.second ? scryfallCache[d.second] : null;
+function setLoadStatus(text, spinning) {
+  document.getElementById('load-status-text').textContent = text;
+  const spinner = document.querySelector('#load-status .mini-spinner');
+  if (spinner) spinner.style.display = spinning ? '' : 'none';
+}
 
-    // Color identity = union of both commanders
-    const colorSet = new Set();
-    (faceData?.colors || []).forEach(c => colorSet.add(c));
-    (secData?.colors || []).forEach(c => colorSet.add(c));
-    const ORDER = ['W','U','B','R','G'];
-    d.colors = colorSet.size === 0 ? ['C'] : ORDER.filter(c => colorSet.has(c));
-
-    // Art from face commander
-    d.art = faceData?.art || null;
+function populateSetDropdown() {
+  const sets = [...new Set(allDecks.map(d=>d.setName))].filter(Boolean);
+  // Sets already sorted newest-first from allDecks
+  const sel = document.getElementById('start-set');
+  sets.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
   });
 }
 
-// ── RENDER ─────────────────────────────────────────────────────────────────
-function getFilteredDecks() {
+// ════════════════════════════════════════════════════════════════
+//  FILTERING & SORTING
+// ════════════════════════════════════════════════════════════════
+function getFiltered() {
   let decks = [...allDecks];
-
-  // Search
   if (searchTerm) {
     const q = searchTerm.toLowerCase();
     decks = decks.filter(d =>
       d.name.toLowerCase().includes(q) ||
       d.setName.toLowerCase().includes(q) ||
-      (d.face && d.face.toLowerCase().includes(q)) ||
-      (d.second && d.second.toLowerCase().includes(q))
+      (d.face&&d.face.toLowerCase().includes(q)) ||
+      (d.second&&d.second.toLowerCase().includes(q))
     );
   }
-
-  // Color filter: deck must contain ALL selected colors
   if (activeColors.size > 0) {
-    decks = decks.filter(d =>
-      [...activeColors].every(c => d.colors.includes(c))
-    );
+    decks = decks.filter(d => [...activeColors].every(c=>d.colors.includes(c)));
   }
-
-  // Sort
-  if (sortMode === 'date-desc') decks.sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
-  else if (sortMode === 'date-asc') decks.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
-  else if (sortMode === 'name') decks.sort((a, b) => a.name.localeCompare(b.name));
-
+  if (activeSet) {
+    decks = decks.filter(d => d.setName === activeSet);
+  }
+  if (sortMode==='date-desc') decks.sort((a,b)=>b.releaseDate.localeCompare(a.releaseDate));
+  else if (sortMode==='date-asc') decks.sort((a,b)=>a.releaseDate.localeCompare(b.releaseDate));
+  else decks.sort((a,b)=>a.name.localeCompare(b.name));
   return decks;
 }
 
-function render() {
-  const $loading = document.getElementById('status-loading');
-  const $error = document.getElementById('status-error');
-  const $empty = document.getElementById('status-empty');
-  const $grid = document.getElementById('deck-grid');
+// ════════════════════════════════════════════════════════════════
+//  BROWSE RENDER
+// ════════════════════════════════════════════════════════════════
+function renderBrowse() {
+  const decks = getFiltered();
+  const $main = document.getElementById('browse-main');
   const $count = document.getElementById('deck-count');
+  $count.textContent = decks.length;
 
-  if (allDecks.length === 0) return; // still loading
-
-  $loading.classList.add('hidden');
-
-  const decks = getFilteredDecks();
-  $count.textContent = decks.length + ' deck' + (decks.length !== 1 ? 's' : '');
-
-  if (decks.length === 0) {
-    $empty.classList.remove('hidden');
-    $grid.innerHTML = '';
+  if (!decks.length) {
+    $main.innerHTML = '<div class="status-msg"><div class="icon">🔍</div><p>No decks match.</p></div>';
     return;
   }
 
-  $empty.classList.add('hidden');
-
-  // Group by set name (maintaining current sort order for groups)
   if (sortMode === 'name') {
-    $grid.innerHTML = decks.map(renderCard).join('');
-    return;
+    $main.innerHTML = `<div class="set-cards">${decks.map(cardHtml).join('')}</div>`;
+  } else {
+    const groups = [], seen = new Map();
+    decks.forEach(d => {
+      if (!seen.has(d.setName)) { seen.set(d.setName,[]); groups.push(d.setName); }
+      seen.get(d.setName).push(d);
+    });
+    $main.innerHTML = groups.map(sn => {
+      const sd = seen.get(sn);
+      return `<div class="set-group">
+        <div class="set-header">
+          <span class="set-name">${esc(sn)}</span>
+          <span class="set-year">${getYear(sd[0].releaseDate)}</span>
+        </div>
+        <div class="set-cards">${sd.map(cardHtml).join('')}</div>
+      </div>`;
+    }).join('');
   }
 
-  const groups = [];
-  const seen = new Map();
-  decks.forEach(d => {
-    if (!seen.has(d.setName)) {
-      seen.set(d.setName, []);
-      groups.push(d.setName);
-    }
-    seen.get(d.setName).push(d);
+  // Attach click handlers
+  $main.querySelectorAll('.deck-card').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.name));
   });
 
-  $grid.innerHTML = groups.map(setName => {
-    const setDecks = seen.get(setName);
-    const year = setDecks[0].releaseDate?.slice(0, 4) || '';
-    return `
-      <div class="set-group">
-        <div class="set-header">
-          <span class="set-name">${esc(setName)}</span>
-          <span class="set-year">${year}</span>
-        </div>
-        <div class="set-cards">
-          ${setDecks.map(renderCard).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
+  // Restore scroll position
+  window.scrollTo(0, browseScrollY);
 }
 
-function renderCard(d) {
+function cardHtml(d) {
+  const pips = d.colors.map(c=>`<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('');
   const artHtml = d.art
-    ? `<img class="card-art" src="${esc(d.art)}" alt="${esc(d.face || d.name)}" loading="lazy" />`
-    : `<div class="card-art-placeholder">⚔</div>`;
-
-  const pips = d.colors.map(c => `<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('');
-
-  const cmdHtml = d.face
-    ? `<div class="card-commander">
-        <span class="label">Commander</span>
-        <span class="cmd-name">${esc(d.face)}</span>
-        ${d.second ? `<span class="label" style="margin-top:4px">Partner</span><span class="cmd-name">${esc(d.second)}</span>` : ''}
-       </div>`
+    ? `<img src="${esc(d.art)}" alt="${esc(d.face||d.name)}" loading="lazy" class="loading" onload="this.classList.remove('loading')" /><div class="art-placeholder">⚔</div>`
+    : `<div class="art-placeholder">⚔</div>`;
+  const cmdText = d.face
+    ? (d.second ? `${esc(d.face)} &amp; ${esc(d.second)}` : esc(d.face))
     : '';
 
-  return `
-    <div class="deck-card">
-      ${artHtml}
-      <div class="card-body">
-        <div class="card-deck-name">${esc(d.name)}</div>
-        ${cmdHtml}
-      </div>
-      <div class="card-footer">
-        <div class="color-pips">${pips}</div>
-        <span class="release-date">${d.releaseDate || ''}</span>
-      </div>
+  return `<div class="deck-card" data-name="${esc(d.name)}">
+    <div class="card-art-wrap">${artHtml}</div>
+    <div class="card-body">
+      <div class="card-deck-name">${esc(d.name)}</div>
+      ${cmdText ? `<div class="card-cmd">${cmdText}</div>` : ''}
     </div>
-  `;
+    <div class="card-footer">
+      <div class="color-pips">${pips}</div>
+      <span class="card-date">${d.releaseDate.slice(0,7)}</span>
+    </div>
+  </div>`;
 }
 
-function esc(s) {
-  if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ════════════════════════════════════════════════════════════════
+//  DETAIL PAGE
+// ════════════════════════════════════════════════════════════════
+async function openDetail(deckName) {
+  browseScrollY = window.scrollY;
+  const deck = allDecks.find(d => d.name === deckName);
+  if (!deck) return;
+
+  // Set header
+  document.getElementById('detail-header-title').textContent = deck.name;
+
+  // Hero art
+  const $hero = document.getElementById('detail-hero');
+  if (deck.art) {
+    $hero.innerHTML = `
+      <img src="${esc(deck.art)}" alt="${esc(deck.face)}" />
+      <div class="detail-hero-overlay"></div>
+      <div class="detail-hero-credit">Art © Wizards of the Coast${deck.artist ? ' · '+esc(deck.artist) : ''}</div>`;
+  } else {
+    $hero.innerHTML = `<div class="art-placeholder" style="font-size:3rem;height:100%;display:flex;align-items:center;justify-content:center">⚔</div>`;
+  }
+
+  // Body: show loading while fetching card types
+  const $body = document.getElementById('detail-body');
+  $body.innerHTML = `
+    <div style="margin-top:14px">
+      <div class="detail-title">${esc(deck.name)}</div>
+      <div class="detail-set">${esc(deck.setName)} · ${deck.releaseDate}</div>
+      <div class="detail-colors">${deck.colors.map(c=>`<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('')}</div>
+      <div class="detail-commanders">
+        <h3>Commanders</h3>
+        ${deck.face ? `<div class="commander-entry"><span class="commander-label">Face</span><span class="commander-name">${esc(deck.face)}</span></div>` : ''}
+        ${deck.second ? `<div class="commander-entry"><span class="commander-label">Partner</span><span class="commander-name">${esc(deck.second)}</span></div>` : ''}
+      </div>
+      <div class="detail-list">
+        <h3>Decklist</h3>
+        <div id="detail-list-inner">
+          <div class="detail-loading"><div class="spinner"></div><span>Fetching card types…</span></div>
+        </div>
+      </div>
+    </div>`;
+
+  showPage('page-detail');
+
+  // Fetch card types
+  const cards = await getDetailCards(deck);
+  renderDetailList(cards, document.getElementById('detail-list-inner'));
 }
 
-function colorName(c) {
-  return { W:'White', U:'Blue', B:'Black', R:'Red', G:'Green', C:'Colorless' }[c] || c;
+async function getDetailCards(deck) {
+  if (detailCardCache[deck.name]) return detailCardCache[deck.name];
+
+  // Combine all cards (main + commander, deduplicated by name)
+  const allNames = deck.rawCards;
+  // Batch into groups of 75 for Scryfall collection endpoint
+  const batches = [];
+  for (let i = 0; i < allNames.length; i += 75) batches.push(allNames.slice(i, i+75));
+
+  const typeMap = {}; // name -> type_line
+
+  for (const batch of batches) {
+    try {
+      await sleep(DELAY);
+      const res = await fetch(SF_COLL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ identifiers: batch.map(c => ({ name: c.name })) })
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      (data.data||[]).forEach(card => {
+        typeMap[card.name] = card.type_line || 'Other';
+      });
+    } catch { /* skip batch on error */ }
+  }
+
+  // Build result: merge rawCards with types
+  const seen = new Set();
+  const result = [];
+  for (const c of allNames) {
+    const key = c.name + '|' + c.foil;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push({
+      name: c.name,
+      count: c.count || 1,
+      foil: c.foil || false,
+      typeLine: typeMap[c.name] || null,
+      typeGroup: classifyType(typeMap[c.name] || ''),
+    });
+  }
+
+  detailCardCache[deck.name] = result;
+  return result;
 }
 
-function showError(msg) {
-  document.getElementById('status-loading').classList.add('hidden');
-  document.getElementById('status-error').classList.remove('hidden');
-  document.getElementById('error-msg').textContent = msg || 'Something went wrong.';
+function renderDetailList(cards, $el) {
+  // Group by type
+  const groups = {};
+  TYPE_ORDER.forEach(t => groups[t] = []);
+  cards.forEach(c => (groups[c.typeGroup]||groups['Other']).push(c));
+
+  const html = TYPE_ORDER
+    .filter(t => groups[t].length > 0)
+    .map(t => {
+      const items = groups[t];
+      const total = items.reduce((s,c)=>s+c.count,0);
+      const rows = items.map(c =>
+        `<div class="card-row">
+          <span class="card-row-count">${c.count}</span>
+          <span class="card-row-name">${esc(c.name)}</span>
+          ${c.foil ? '<span class="card-row-foil">✦</span>' : ''}
+        </div>`
+      ).join('');
+      return `<div class="type-group">
+        <div class="type-group-header">
+          <span class="type-group-name">${t}</span>
+          <span class="type-group-count">(${total})</span>
+        </div>
+        ${rows}
+      </div>`;
+    }).join('');
+
+  $el.innerHTML = html || '<p style="color:var(--text-dim);font-size:0.8rem">Card data unavailable.</p>';
 }
 
-// ── CONTROLS ───────────────────────────────────────────────────────────────
-document.getElementById('search').addEventListener('input', e => {
-  searchTerm = e.target.value.trim();
-  render();
+// ════════════════════════════════════════════════════════════════
+//  EVENT WIRING
+// ════════════════════════════════════════════════════════════════
+function syncFiltersFromStart() {
+  searchTerm   = document.getElementById('start-search').value.trim();
+  activeSet    = document.getElementById('start-set').value;
+  sortMode     = document.getElementById('start-sort').value;
+
+  // Sync browse toolbar to match
+  document.getElementById('browse-search').value = searchTerm;
+  document.getElementById('sort-select').value = sortMode;
+
+  // Sync browse color pips
+  document.querySelectorAll('#browse-color-row .pip-btn').forEach(btn => {
+    btn.classList.toggle('active', activeColors.has(btn.dataset.c));
+  });
+}
+
+document.getElementById('browse-btn').addEventListener('click', () => {
+  browseScrollY = 0;
+  syncFiltersFromStart();
+  renderBrowse();
+  showPage('page-browse');
 });
 
-document.getElementById('sort-select').addEventListener('change', e => {
-  sortMode = e.target.value;
-  render();
+document.getElementById('browse-back').addEventListener('click', () => {
+  showPage('page-start');
 });
 
-document.getElementById('color-filters').addEventListener('click', e => {
-  const btn = e.target.closest('.pip-btn');
-  if (!btn) return;
+document.getElementById('detail-back').addEventListener('click', () => {
+  showPage('page-browse');
+  window.scrollTo(0, browseScrollY);
+});
+
+// Start page color pips
+document.getElementById('start-color-row').addEventListener('click', e => {
+  const btn = e.target.closest('.pip-btn'); if (!btn) return;
   const c = btn.dataset.c;
   if (activeColors.has(c)) { activeColors.delete(c); btn.classList.remove('active'); }
   else { activeColors.add(c); btn.classList.add('active'); }
-  render();
 });
 
-// ── BOOT ───────────────────────────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+// Browse toolbar: live filter
+document.getElementById('browse-search').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  browseScrollY = 0;
+  renderBrowse();
+});
+document.getElementById('sort-select').addEventListener('change', e => {
+  sortMode = e.target.value; browseScrollY = 0; renderBrowse();
+});
+document.getElementById('browse-color-row').addEventListener('click', e => {
+  const btn = e.target.closest('.pip-btn'); if (!btn) return;
+  const c = btn.dataset.c;
+  if (activeColors.has(c)) { activeColors.delete(c); btn.classList.remove('active'); }
+  else { activeColors.add(c); btn.classList.add('active'); }
+  // Mirror back to start page pips
+  document.querySelectorAll('#start-color-row .pip-btn').forEach(b => {
+    b.classList.toggle('active', activeColors.has(b.dataset.c));
+  });
+  browseScrollY = 0; renderBrowse();
+});
+
+// ════════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 loadDecks();
 </script>
 </body>
