@@ -202,8 +202,7 @@
       border: 1px solid var(--border); flex-shrink: 0;
     }
 
-    /* grid */
-    .browse-main { padding: 10px; flex: 1; }
+    /* grid */    .browse-main { padding: 10px; flex: 1; }
     .set-group { margin-bottom: 20px; }
     .set-header {
       display: flex; align-items: baseline; gap: 8px;
@@ -346,6 +345,77 @@
       border-radius: 50%; animation: spin 0.8s linear infinite;
     }
 
+    /* ── BROWSE BODY (two-column on desktop) ─────────────────────── */
+    .browse-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden; /* children manage their own scroll */
+    }
+    .browse-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    /* ── CARD PREVIEW PANEL ──────────────────────────────────────── */
+    /* Hidden on mobile — shown only when viewport is wide enough */
+    .card-preview-panel {
+      display: none;
+    }
+
+    @media (min-width: 900px) {
+      .card-preview-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: calc(100dvh - 80px); /* 80px ≈ toolbar height */
+        padding: 16px 12px;
+        border-left: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .preview-empty {
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 0.78rem;
+        line-height: 1.6;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        width: 100%;
+      }
+
+      .preview-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      #preview-img {
+        width: 100%;
+        max-width: 224px; /* standard card ratio ~63×88mm → 224×313px at this width */
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        transition: opacity 0.2s;
+        display: block;
+      }
+      #preview-img.loading { opacity: 0; }
+
+      .preview-credit {
+        font-size: 0.6rem;
+        color: var(--text-dim);
+        text-align: center;
+        font-family: sans-serif;
+      }
+    }
+
     /* responsive */
     @media (min-width: 600px) {
       .set-cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
@@ -441,8 +511,20 @@
       </div>
     </div>
   </div>
-  <div class="browse-main" id="browse-main">
-    <div class="status-msg"><div class="icon">⚔</div><p>Loading…</p></div>
+  <div class="browse-body">
+    <div class="browse-main" id="browse-main">
+      <div class="status-msg"><div class="icon">⚔</div><p>Loading…</p></div>
+    </div>
+    <!-- Desktop card preview panel -->
+    <div class="card-preview-panel" id="card-preview-panel">
+      <div class="preview-empty" id="preview-empty">
+        <span>Hover a deck<br>to preview</span>
+      </div>
+      <div class="preview-content" id="preview-content" style="display:none">
+        <img id="preview-img" src="" alt="" />
+        <div class="preview-credit" id="preview-credit"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -472,7 +554,7 @@ const SF_COLL   = 'https://api.scryfall.com/cards/collection';
 const DELAY     = 80; // ms between Scryfall calls
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
-const CACHE_KEY  = 'mtg_precons_v1';
+const CACHE_KEY  = 'mtg_precons_v2';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
 
@@ -547,15 +629,16 @@ async function fetchScryfallCard(name) {
 
 function extractCardMeta(card) {
   const colors = card.color_identity || [];
-  let art = null, artist = null, copyright = null;
+  let art = null, cardImg = null, artist = null;
   if (card.card_faces && card.card_faces[0]?.image_uris) {
-    art = card.card_faces[0].image_uris.art_crop;
+    art     = card.card_faces[0].image_uris.art_crop;
+    cardImg = card.card_faces[0].image_uris.normal;
   } else if (card.image_uris) {
-    art = card.image_uris.art_crop;
+    art     = card.image_uris.art_crop;
+    cardImg = card.image_uris.normal;
   }
   artist = card.artist || null;
-  copyright = card.set_name ? `© Wizards of the Coast` : null;
-  return { colors, art, artist, copyright };
+  return { colors, art, cardImg, artist };
 }
 
 function setColors(deck) {
@@ -564,9 +647,10 @@ function setColors(deck) {
   const set = new Set();
   (f?.colors||[]).forEach(c=>set.add(c));
   (s?.colors||[]).forEach(c=>set.add(c));
-  deck.colors = set.size===0 ? ['C'] : COLOR_ORDER.filter(c=>set.has(c));
-  deck.art = f?.art || null;
-  deck.artist = f?.artist || null;
+  deck.colors  = set.size===0 ? ['C'] : COLOR_ORDER.filter(c=>set.has(c));
+  deck.art     = f?.art     || null;
+  deck.cardImg = f?.cardImg || null;
+  deck.artist  = f?.artist  || null;
 }
 
 // ── Cache helpers ──────────────────────────────────────────────
@@ -761,9 +845,11 @@ function renderBrowse() {
     }).join('');
   }
 
-  // Attach click handlers
+  // Attach click + hover handlers
   $main.querySelectorAll('.deck-card').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.name));
+    el.addEventListener('mouseenter', () => showCardPreview(el.dataset.name));
+    el.addEventListener('mouseleave', () => hideCardPreview());
   });
 
   // Restore scroll position
@@ -805,11 +891,15 @@ async function openDetail(deckName) {
 
   // Hero art
   const $hero = document.getElementById('detail-hero');
-  if (deck.art) {
+  if (deck.cardImg) {
     $hero.innerHTML = `
-      <img src="${esc(deck.art)}" alt="${esc(deck.face)}" />
+      <img src="${esc(deck.cardImg)}" alt="${esc(deck.face)}" />
       <div class="detail-hero-overlay"></div>
       <div class="detail-hero-credit">Art © Wizards of the Coast${deck.artist ? ' · '+esc(deck.artist) : ''}</div>`;
+  } else if (deck.art) {
+    $hero.innerHTML = `
+      <img src="${esc(deck.art)}" alt="${esc(deck.face)}" />
+      <div class="detail-hero-overlay"></div>`;
   } else {
     $hero.innerHTML = `<div class="art-placeholder" style="font-size:3rem;height:100%;display:flex;align-items:center;justify-content:center">⚔</div>`;
   }
@@ -917,6 +1007,54 @@ function renderDetailList(cards, $el) {
 
   $el.innerHTML = html || '<p style="color:var(--text-dim);font-size:0.8rem">Card data unavailable.</p>';
 }
+
+// ════════════════════════════════════════════════════════════════
+//  CARD PREVIEW (desktop hover)
+// ════════════════════════════════════════════════════════════════
+function showCardPreview(deckName) {
+  const deck = allDecks.find(d => d.name === deckName);
+  if (!deck || !deck.cardImg) return;
+
+  const $empty   = document.getElementById('preview-empty');
+  const $content = document.getElementById('preview-content');
+  const $img     = document.getElementById('preview-img');
+  const $credit  = document.getElementById('preview-credit');
+
+  $empty.style.display = 'none';
+  $content.style.display = 'flex';
+
+  // Only swap image if it's a different card (avoids flicker on small mouse moves)
+  if ($img.dataset.deck !== deckName) {
+    $img.classList.add('loading');
+    $img.src = deck.cardImg;
+    $img.alt = deck.face || deck.name;
+    $img.dataset.deck = deckName;
+    $img.onload = () => $img.classList.remove('loading');
+    $credit.textContent = deck.artist
+      ? `Art by ${deck.artist} · © Wizards of the Coast`
+      : '© Wizards of the Coast';
+  }
+}
+
+function hideCardPreview() {
+  // Small delay so hovering between adjacent cards doesn't flicker
+  // We clear it immediately if a new card is entered
+  hideCardPreview._timer = setTimeout(() => {
+    const $empty   = document.getElementById('preview-empty');
+    const $content = document.getElementById('preview-content');
+    if ($empty && $content) {
+      $empty.style.display = '';
+      $content.style.display = 'none';
+    }
+  }, 120);
+}
+
+// Cancel the hide timer when entering a new card
+document.addEventListener('mouseenter', e => {
+  if (e.target.closest && e.target.closest('.deck-card')) {
+    clearTimeout(hideCardPreview._timer);
+  }
+}, true);
 
 // ════════════════════════════════════════════════════════════════
 //  EVENT WIRING
