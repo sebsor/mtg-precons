@@ -290,14 +290,29 @@
       font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em;
       color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
     }
-    .type-group { margin-bottom: 16px; }
-    .type-group-header {
-      display: flex; align-items: baseline; gap: 7px;
-      padding: 3px 0 5px; border-bottom: 1px solid var(--border);
-      margin-bottom: 4px;
+
+    /* Type filter chips */
+    .type-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 14px;
     }
-    .type-group-name { font-size: 0.75rem; color: var(--text); font-weight: 600; }
-    .type-group-count { font-size: 0.65rem; color: var(--text-dim); font-family: monospace; }
+    .type-chip {
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      font-family: inherit;
+      display: flex; align-items: center; gap: 5px;
+      color: var(--text);
+    }
+    .type-chip:active { transform: scale(0.95); }
+    .type-chip.dimmed { opacity: 0.35; }
+
+    .type-group { margin-bottom: 18px; }
+    .type-group-label {
+      font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-dim); font-weight: 600; margin-bottom: 5px; padding: 0 2px;
+    }
     .card-row {
       display: flex; align-items: center; gap: 8px;
       padding: 5px 0; border-bottom: 1px solid var(--border);
@@ -478,6 +493,7 @@ const SF_COLL   = 'https://api.scryfall.com/cards/collection';
 const DELAY     = 120; // ms between batch requests — well within Scryfall's 10 req/s
 
 const TYPE_ORDER = ['Creature','Planeswalker','Instant','Sorcery','Artifact','Enchantment','Battle','Land','Other'];
+const PASTELS    = ['#f4e7e2', '#cee3e0', '#c3ccf8'];
 const CACHE_KEY  = 'mtg_precons_v5';
 const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours in ms
 const COLOR_ORDER = ['W','U','B','R','G'];
@@ -781,10 +797,7 @@ function renderBrowse() {
   document.getElementById('browse-main').scrollTop = browseScrollY;
 }
 
-const PASTELS = ['#f4e7e2', '#cee3e0', '#c3ccf8'];
-
 function cardHtml(d, idx) {
-  const bg = PASTELS[idx % 3];
   const pips = pipHtml(d.colors);
   const artHtml = d.art
     ? `<img src="${esc(d.art)}" alt="${esc(d.face||d.name)}" loading="lazy" class="loading" onload="this.classList.remove('loading')" /><div class="art-placeholder">⚔</div>`
@@ -793,7 +806,7 @@ function cardHtml(d, idx) {
     ? (d.second ? `${esc(d.face)} &amp; ${esc(d.second)}` : esc(d.face))
     : '';
 
-  return `<div class="deck-card" data-name="${esc(d.name)}" style="background:${bg}">
+  return `<div class="deck-card" data-name="${esc(d.name)}">
     <div class="card-art-wrap">${artHtml}</div>
     <div class="card-body">
       <div class="card-deck-name">${esc(d.name)}</div>
@@ -981,20 +994,25 @@ async function getDetailCards(deck) {
 }
 
 function renderDetailList(cards, $el, deck) {
-  // Exclude the face commander — shown separately above the list
   const commanderNames = new Set([deck?.face, deck?.second].filter(Boolean));
   const listCards = cards.filter(c => !commanderNames.has(c.name));
 
-  // Group by type
+  // Build groups — only types that have cards
   const groups = {};
   TYPE_ORDER.forEach(t => groups[t] = []);
   listCards.forEach(c => (groups[c.typeGroup]||groups['Other']).push(c));
+  const activeTypes = TYPE_ORDER.filter(t => groups[t].length > 0);
 
-  const html = TYPE_ORDER
-    .filter(t => groups[t].length > 0)
-    .map(t => {
+  // Pastel assigned per type consistently (same type always same color)
+  const typeColor = {};
+  activeTypes.forEach((t, i) => { typeColor[t] = PASTELS[i % PASTELS.length]; });
+
+  let activeFilter = null; // null = show all
+
+  function renderRows() {
+    const typesToShow = activeFilter ? [activeFilter] : activeTypes;
+    return typesToShow.map(t => {
       const items = groups[t];
-      const total = items.reduce((s,c)=>s+c.count,0);
       const rows = items.map(c =>
         `<div class="card-row" data-img="${esc(c.cardImg||'')}" data-name="${esc(c.name)}">
           <span class="card-row-count">${c.count}</span>
@@ -1002,36 +1020,59 @@ function renderDetailList(cards, $el, deck) {
           ${c.foil ? '<span class="card-row-foil">✦</span>' : ''}
         </div>`
       ).join('');
-      return `<div class="type-group">
-        <div class="type-group-header">
-          <span class="type-group-name">${t}</span>
-          <span class="type-group-count">(${total})</span>
-        </div>
+      return `<div class="type-group" data-type="${esc(t)}">
+        <div class="type-group-label">${t} (${items.reduce((s,c)=>s+c.count,0)})</div>
         ${rows}
       </div>`;
     }).join('');
+  }
 
-  $el.innerHTML = html || '<p style="color:var(--text-dim);font-size:0.8rem">Card data unavailable.</p>';
+  function rebuildRows() {
+    document.getElementById('detail-rows').innerHTML = renderRows();
+    wireRowEvents();
+    // Update chip dimmed state
+    document.querySelectorAll('.type-chip').forEach(chip => {
+      chip.classList.toggle('dimmed', activeFilter !== null && chip.dataset.type !== activeFilter);
+    });
+  }
 
-  // Wire hover (desktop) + tap (mobile) events
-  $el.querySelectorAll('.card-row[data-img]').forEach(row => {
-    const img  = row.dataset.img;
-    const name = row.dataset.name;
-    if (!img) return;
+  function wireRowEvents() {
+    document.querySelectorAll('#detail-rows .card-row[data-img]').forEach(row => {
+      const img  = row.dataset.img;
+      const name = row.dataset.name;
+      if (!img) return;
+      row.addEventListener('mouseenter', () => showDetailCardPreview(img, name));
+      row.addEventListener('mouseleave', () => hideDetailCardPreview());
+      row.addEventListener('click', () => {
+        if (window.matchMedia('(max-width: 899px)').matches) {
+          setDetailHeroImage(img, name, null, 'card');
+          document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
+          row.classList.add('tapped');
+        }
+      });
+    });
+  }
 
-    // Desktop hover → side panel
-    row.addEventListener('mouseenter', () => showDetailCardPreview(img, name));
-    row.addEventListener('mouseleave', () => hideDetailCardPreview());
+  // Build chip bar
+  const chips = activeTypes.map(t => {
+    const count = groups[t].reduce((s,c)=>s+c.count,0);
+    return `<button class="type-chip" data-type="${esc(t)}" style="background:${typeColor[t]}">${t} <span style="opacity:0.6;font-size:0.65rem">${count}</span></button>`;
+  }).join('');
 
-    // Mobile tap → swap hero to full card image
-    row.addEventListener('click', () => {
-      if (window.matchMedia('(max-width: 899px)').matches) {
-        setDetailHeroImage(img, name, null, 'card');
-        document.querySelectorAll('.card-row.tapped').forEach(r => r.classList.remove('tapped'));
-        row.classList.add('tapped');
-      }
+  $el.innerHTML = `
+    <div class="type-chips" id="type-chips">${chips}</div>
+    <div id="detail-rows">${renderRows()}</div>`;
+
+  // Wire chip clicks
+  $el.querySelectorAll('.type-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const t = chip.dataset.type;
+      activeFilter = activeFilter === t ? null : t;
+      rebuildRows();
     });
   });
+
+  wireRowEvents();
 }
 
 // ════════════════════════════════════════════════════════════════
