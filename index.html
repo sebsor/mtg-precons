@@ -279,7 +279,27 @@
       font-family: sans-serif;
     }
 
+    .detail-columns {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
     .detail-body { padding: 0 14px 20px; flex: 1; overflow-y: auto; }
+
+    .detail-preview-panel {
+      /* inherits .card-preview-panel display:none on mobile */
+    }
+
+    @media (min-width: 900px) {
+      .detail-preview-panel {
+        /* Override height since detail page has hero above, not toolbar */
+        height: auto;
+        align-self: stretch;
+        position: sticky;
+        top: 0;
+      }
+      .detail-body { max-width: none; margin: 0; }
+    }
 
     .detail-title {
       font-size: 1.25rem; color: var(--gold);
@@ -539,8 +559,20 @@
   <div class="detail-hero" id="detail-hero">
     <div class="art-placeholder">⚔</div>
   </div>
-  <div class="detail-body" id="detail-body">
-    <div class="detail-loading"><div class="spinner"></div><span>Loading deck list…</span></div>
+  <div class="detail-columns">
+    <div class="detail-body" id="detail-body">
+      <div class="detail-loading"><div class="spinner"></div><span>Loading deck list…</span></div>
+    </div>
+    <!-- Desktop card preview panel for decklist -->
+    <div class="card-preview-panel detail-preview-panel" id="detail-preview-panel">
+      <div class="preview-empty" id="detail-preview-empty">
+        <span>Hover a card<br>to preview</span>
+      </div>
+      <div class="preview-content" id="detail-preview-content" style="display:none">
+        <img id="detail-preview-img" src="" alt="" />
+        <div class="preview-credit" id="detail-preview-credit"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -940,7 +972,8 @@ async function getDetailCards(deck) {
   const batches = [];
   for (let i = 0; i < allNames.length; i += 75) batches.push(allNames.slice(i, i+75));
 
-  const typeMap = {}; // name -> type_line
+  const typeMap = {};   // name -> type_line
+  const imgMap  = {};   // name -> full card image URL
 
   for (const batch of batches) {
     try {
@@ -954,11 +987,17 @@ async function getDetailCards(deck) {
       const data = await res.json();
       (data.data||[]).forEach(card => {
         typeMap[card.name] = card.type_line || 'Other';
+        // Full card image — prefer front face for DFCs
+        if (card.card_faces && card.card_faces[0]?.image_uris) {
+          imgMap[card.name] = card.card_faces[0].image_uris.normal;
+        } else if (card.image_uris) {
+          imgMap[card.name] = card.image_uris.normal;
+        }
       });
     } catch { /* skip batch on error */ }
   }
 
-  // Build result: merge rawCards with types
+  // Build result: merge rawCards with types + images
   const seen = new Set();
   const result = [];
   for (const c of allNames) {
@@ -971,6 +1010,7 @@ async function getDetailCards(deck) {
       foil: c.foil || false,
       typeLine: typeMap[c.name] || null,
       typeGroup: classifyType(typeMap[c.name] || ''),
+      cardImg: imgMap[c.name] || null,
     });
   }
 
@@ -990,7 +1030,7 @@ function renderDetailList(cards, $el) {
       const items = groups[t];
       const total = items.reduce((s,c)=>s+c.count,0);
       const rows = items.map(c =>
-        `<div class="card-row">
+        `<div class="card-row" data-img="${esc(c.cardImg||'')}" data-name="${esc(c.name)}">
           <span class="card-row-count">${c.count}</span>
           <span class="card-row-name">${esc(c.name)}</span>
           ${c.foil ? '<span class="card-row-foil">✦</span>' : ''}
@@ -1006,6 +1046,16 @@ function renderDetailList(cards, $el) {
     }).join('');
 
   $el.innerHTML = html || '<p style="color:var(--text-dim);font-size:0.8rem">Card data unavailable.</p>';
+
+  // Wire hover events for detail preview panel
+  $el.querySelectorAll('.card-row[data-img]').forEach(row => {
+    row.addEventListener('mouseenter', () => {
+      const img = row.dataset.img;
+      const name = row.dataset.name;
+      if (img) showDetailCardPreview(img, name);
+    });
+    row.addEventListener('mouseleave', () => hideDetailCardPreview());
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1053,6 +1103,44 @@ function hideCardPreview() {
 document.addEventListener('mouseenter', e => {
   if (e.target.closest && e.target.closest('.deck-card')) {
     clearTimeout(hideCardPreview._timer);
+  }
+}, true);
+
+// ── Detail page card preview ───────────────────────────────────
+function showDetailCardPreview(imgUrl, cardName) {
+  clearTimeout(hideDetailCardPreview._timer);
+  const $empty   = document.getElementById('detail-preview-empty');
+  const $content = document.getElementById('detail-preview-content');
+  const $img     = document.getElementById('detail-preview-img');
+  const $credit  = document.getElementById('detail-preview-credit');
+  if (!$empty) return;
+
+  $empty.style.display = 'none';
+  $content.style.display = 'flex';
+
+  if ($img.src !== imgUrl) {
+    $img.classList.add('loading');
+    $img.src = imgUrl;
+    $img.alt = cardName;
+    $img.onload = () => $img.classList.remove('loading');
+    $credit.textContent = '© Wizards of the Coast';
+  }
+}
+
+function hideDetailCardPreview() {
+  hideDetailCardPreview._timer = setTimeout(() => {
+    const $empty   = document.getElementById('detail-preview-empty');
+    const $content = document.getElementById('detail-preview-content');
+    if ($empty && $content) {
+      $empty.style.display = '';
+      $content.style.display = 'none';
+    }
+  }, 120);
+}
+
+document.addEventListener('mouseenter', e => {
+  if (e.target.closest && e.target.closest('.card-row')) {
+    clearTimeout(hideDetailCardPreview._timer);
   }
 }, true);
 
