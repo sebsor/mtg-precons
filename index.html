@@ -1061,10 +1061,16 @@ function setDetailHeroImage(imgUrl, altText, artist, mode) {
   }
 
   if ($img.src !== imgUrl) {
+    // Clear src first so the old image disappears instantly before the
+    // object-fit mode switches — prevents the "shrinking" artifact
     $img.classList.add('loading');
-    $img.src = imgUrl;
-    $img.alt = altText || '';
-    $img.onload = () => $img.classList.remove('loading');
+    $img.src = '';
+    // Let the class toggle take effect, then load the new image
+    requestAnimationFrame(() => {
+      $img.src = imgUrl;
+      $img.alt = altText || '';
+      $img.onload = () => $img.classList.remove('loading');
+    });
   }
 
   // Credit bar below hero
