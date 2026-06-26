@@ -69,133 +69,28 @@
     }
     .back-btn:active { opacity: 0.7; }
 
-    /* ── PILL / PIP BUTTONS ──────────────────────────────────────── */
+    /* ── MANA SYMBOL ICONS ───────────────────────────────────────── */
+    /* Both pip-btn (filter toggles) and pip (display) use Scryfall SVGs */
     .pip-btn {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 30px; height: 30px; border-radius: 50%;
       border: 2px solid transparent;
-      cursor: pointer; font-size: 0.6rem; font-weight: bold;
+      cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
-      transition: transform 0.1s, border-color 0.15s;
-      color: #000; user-select: none; flex-shrink: 0;
+      transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+      user-select: none; flex-shrink: 0;
+      background: none;
     }
     .pip-btn:active { transform: scale(0.88); }
-    .pip-btn.active { border-color: #fff; box-shadow: 0 0 0 1px #fff4; }
-    .pip-btn[data-c="W"] { background: var(--pip-W); }
-    .pip-btn[data-c="U"] { background: var(--pip-U); color: #fff; }
-    .pip-btn[data-c="B"] { background: var(--pip-B); color: #fff; }
-    .pip-btn[data-c="R"] { background: var(--pip-R); color: #fff; }
-    .pip-btn[data-c="G"] { background: var(--pip-G); color: #fff; }
-    .pip-btn[data-c="C"] { background: var(--pip-C); }
+    .pip-btn.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+    .pip-btn img { width: 24px; height: 24px; display: block; border-radius: 50%; }
 
     .pip {
       width: var(--pip-size); height: var(--pip-size);
-      border-radius: 50%; border: 1.5px solid rgba(0,0,0,0.35);
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 0.5rem; font-weight: bold; color: #000; flex-shrink: 0;
+      flex-shrink: 0;
     }
-    .pip.W { background: var(--pip-W); }
-    .pip.U { background: var(--pip-U); color: #fff; }
-    .pip.B { background: var(--pip-B); color: #fff; }
-    .pip.R { background: var(--pip-R); color: #fff; }
-    .pip.G { background: var(--pip-G); color: #fff; }
-    .pip.C { background: var(--pip-C); }
+    .pip img { width: 100%; height: 100%; display: block; }
 
-    /* ─────────────────────────────────────────────────────────────
-       START PAGE
-    ───────────────────────────────────────────────────────────── */
-    #page-start { justify-content: flex-start; }
-
-    .start-hero {
-      text-align: center;
-      padding: 32px 20px 24px;
-      background: linear-gradient(180deg, #2a1f08 0%, var(--bg) 100%);
-      border-bottom: 1px solid var(--border);
-    }
-    .start-hero .rune { font-size: 2.8rem; line-height: 1; margin-bottom: 8px; }
-    .start-hero h2 {
-      font-size: 1.3rem; font-weight: normal;
-      color: var(--gold); letter-spacing: 0.08em;
-      text-transform: uppercase; margin-bottom: 4px;
-    }
-    .start-hero p { font-size: 0.8rem; color: var(--text-dim); }
-
-    .start-filters {
-      padding: 20px 16px;
-      display: flex; flex-direction: column; gap: 16px;
-      flex: 1;
-    }
-
-    .filter-group label {
-      display: block; font-size: 0.65rem;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--gold-dim); margin-bottom: 7px;
-    }
-    .filter-group input,
-    .filter-group select {
-      width: 100%;
-      background: var(--card-bg); border: 1px solid var(--border);
-      border-radius: var(--radius); color: var(--text);
-      font-size: 0.88rem; padding: 10px 12px;
-      outline: none; font-family: inherit;
-      -webkit-appearance: none;
-    }
-    .filter-group input:focus,
-    .filter-group select:focus { border-color: var(--gold-dim); }
-    .filter-group input::placeholder { color: var(--text-dim); }
-
-    .color-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-    .start-actions {
-      padding: 0 16px calc(16px + var(--safe-bottom));
-      display: flex; flex-direction: column; gap: 10px;
-    }
-
-    .start-loading-state {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 24px;
-    }
-    .first-load-msg {
-      text-align: center;
-      max-width: 280px;
-    }
-    .first-load-title {
-      font-size: 0.95rem;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    .first-load-sub {
-      font-size: 0.75rem;
-      color: var(--gold-dim);
-      font-family: monospace;
-      margin-bottom: 16px;
-      min-height: 1.2em;
-    }
-    .first-load-note {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-      border-top: 1px solid var(--border);
-      padding-top: 14px;
-    }
-      width: 100%; padding: 13px;
-      background: linear-gradient(135deg, #a07830 0%, var(--gold) 50%, #a07830 100%);
-      border: none; border-radius: var(--radius);
-      color: #1a1208; font-size: 0.95rem; font-weight: bold;
-      cursor: pointer; font-family: inherit;
-      letter-spacing: 0.05em; text-transform: uppercase;
-      transition: opacity 0.15s;
-    }
-    .btn-primary:disabled { opacity: 0.45; cursor: default; }
-    .btn-primary:not(:disabled):active { opacity: 0.85; }
-
-    .load-status {
-      text-align: center; font-size: 0.75rem;
-      color: var(--text-dim); display: flex;
-      align-items: center; justify-content: center; gap: 7px;
-    }
     .mini-spinner {
       width: 14px; height: 14px;
       border: 2px solid var(--border); border-top-color: var(--gold);
@@ -455,11 +350,25 @@
       border-radius: 50%; animation: spin 0.8s linear infinite;
     }
 
+    /* ── BROWSE LOADING OVERLAY ──────────────────────────────────── */
+    .browse-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 40px 24px;
+    }
+    .browse-loading-overlay.hidden { display: none; }
+
     /* ── BROWSE BODY (two-column on desktop) ─────────────────────── */
     .browse-body {
       display: flex;
       flex: 1;
-      overflow: hidden; /* children manage their own scroll */
+      overflow: hidden;
+      position: relative;
     }
     .browse-main {
       flex: 1;
@@ -538,79 +447,11 @@
 <body>
 
 <!-- ══════════════════════════════════════════════════════════════
-     START PAGE
-══════════════════════════════════════════════════════════════ -->
-<div id="page-start" class="page active">
-  <div class="start-hero">
-    <div class="rune">⚔</div>
-    <h2>Commander Precons</h2>
-    <p>All official Commander preconstructed decks</p>
-  </div>
-
-  <!-- Shown only on first load (no cache) -->
-  <div class="start-loading-state" id="start-loading-state">
-    <div class="first-load-msg">
-      <div class="mini-spinner" style="width:20px;height:20px;border-width:3px;margin:0 auto 14px"></div>
-      <p class="first-load-title">Fetching decks for the first time…</p>
-      <p class="first-load-sub" id="load-status-text">Loading decks…</p>
-      <p class="first-load-note">This only happens once. Future visits load instantly from cache.</p>
-    </div>
-  </div>
-
-  <!-- Shown when data is ready (or cached) -->
-  <div class="start-filters" id="start-filters" style="display:none">
-
-    <div class="filter-group">
-      <label>Search</label>
-      <input type="search" id="start-search" placeholder="Deck name, commander, set…" autocomplete="off" />
-    </div>
-
-    <div class="filter-group">
-      <label>Color identity</label>
-      <div class="color-row" id="start-color-row">
-        <button class="pip-btn" data-c="W">W</button>
-        <button class="pip-btn" data-c="U">U</button>
-        <button class="pip-btn" data-c="B">B</button>
-        <button class="pip-btn" data-c="R">R</button>
-        <button class="pip-btn" data-c="G">G</button>
-        <button class="pip-btn" data-c="C">C</button>
-      </div>
-    </div>
-
-    <div class="filter-group">
-      <label>Set</label>
-      <select id="start-set">
-        <option value="">All sets</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label>Sort</label>
-      <select id="start-sort">
-        <option value="date-desc">Newest first</option>
-        <option value="date-asc">Oldest first</option>
-        <option value="name">A – Z</option>
-      </select>
-    </div>
-
-  </div>
-
-  <div class="start-actions" id="start-actions" style="display:none">
-    <div class="load-status" id="load-status">
-      <span class="mini-spinner" style="display:none"></span>
-      <span id="load-status-cached"></span>
-    </div>
-    <button class="btn-primary" id="browse-btn">Browse Decks</button>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════
      BROWSE PAGE
 ══════════════════════════════════════════════════════════════ -->
-<div id="page-browse" class="page">
+<div id="page-browse" class="page active">
   <div class="browse-toolbar">
     <div class="browse-toolbar-row">
-      <button class="back-btn" id="browse-back">← Filters</button>
       <input id="browse-search" type="search" placeholder="Search…" autocomplete="off" />
       <select id="sort-select">
         <option value="date-desc">New</option>
@@ -621,19 +462,29 @@
     </div>
     <div class="browse-toolbar-row">
       <div id="browse-color-row" style="display:flex;gap:5px">
-        <button class="pip-btn" data-c="W">W</button>
-        <button class="pip-btn" data-c="U">U</button>
-        <button class="pip-btn" data-c="B">B</button>
-        <button class="pip-btn" data-c="R">R</button>
-        <button class="pip-btn" data-c="G">G</button>
-        <button class="pip-btn" data-c="C">C</button>
+        <button class="pip-btn" data-c="W" title="White"><img src="https://svgs.scryfall.io/card-symbols/W.svg" alt="W"></button>
+        <button class="pip-btn" data-c="U" title="Blue"><img src="https://svgs.scryfall.io/card-symbols/U.svg" alt="U"></button>
+        <button class="pip-btn" data-c="B" title="Black"><img src="https://svgs.scryfall.io/card-symbols/B.svg" alt="B"></button>
+        <button class="pip-btn" data-c="R" title="Red"><img src="https://svgs.scryfall.io/card-symbols/R.svg" alt="R"></button>
+        <button class="pip-btn" data-c="G" title="Green"><img src="https://svgs.scryfall.io/card-symbols/G.svg" alt="G"></button>
+        <button class="pip-btn" data-c="C" title="Colorless"><img src="https://svgs.scryfall.io/card-symbols/C.svg" alt="C"></button>
       </div>
+      <select id="start-set" style="background:#2a2010;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.75rem;padding:5px 7px;outline:none;cursor:pointer;-webkit-appearance:none;margin-left:auto">
+        <option value="">All sets</option>
+      </select>
+    </div>
+  </div>
+  <!-- First-load overlay: shown while fetching, hidden once ready -->
+  <div id="browse-loading-overlay" class="browse-loading-overlay">
+    <div class="first-load-msg">
+      <div class="mini-spinner" style="width:24px;height:24px;border-width:3px;margin:0 auto 16px"></div>
+      <p class="first-load-title">Fetching decks for the first time…</p>
+      <p class="first-load-sub" id="load-status-text">Loading…</p>
+      <p class="first-load-note">This only happens once. Future visits load instantly.</p>
     </div>
   </div>
   <div class="browse-body">
-    <div class="browse-main" id="browse-main">
-      <div class="status-msg"><div class="icon">⚔</div><p>Loading…</p></div>
-    </div>
+    <div class="browse-main" id="browse-main"></div>
     <!-- Desktop card preview panel -->
     <div class="card-preview-panel" id="card-preview-panel">
       <div class="preview-empty" id="preview-empty">
@@ -713,6 +564,11 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function colorName(c) { return {W:'White',U:'Blue',B:'Black',R:'Red',G:'Green',C:'Colorless'}[c]||c; }
+function pipHtml(colors) {
+  return colors.map(c =>
+    `<span class="pip" title="${colorName(c)}"><img src="https://svgs.scryfall.io/card-symbols/${c}.svg" alt="${c}"></span>`
+  ).join('');
+}
 function getYear(d) { return (d||'').slice(0,4); }
 
 function classifyType(type_line) {
@@ -816,21 +672,22 @@ function cacheAge(ts) {
 
 // ── Main load ─────────────────────────────────────────────────
 async function loadDecks() {
-  // 1. Try cache first
+  // 1. Try cache first — hide overlay immediately, render at once
   const cached = loadCache();
   if (cached) {
     allDecks = cached.decks;
     populateSetDropdown();
     dataReady = true;
-    showStartReady(cached.ts);
+    hideBrowseOverlay();
+    renderBrowse();
     return;
   }
 
-  // 2. No valid cache — fetch everything, show loading state
-  setLoadStatus('Fetching deck list…', true);
+  // 2. No valid cache — show overlay with progress while fetching
+  setLoadStatus('Fetching deck list…');
   try {
     const res = await fetch(DECKS_URL);
-    if (!res.ok) throw new Error('HTTP '+res.status);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const raw = await res.json();
 
     const filtered = raw.filter(d =>
@@ -871,45 +728,22 @@ async function loadDecks() {
 
     saveCache(allDecks);
     dataReady = true;
-    showStartReady(null); // no cache timestamp — freshly loaded
+    hideBrowseOverlay();
+    renderBrowse();
 
   } catch(e) {
-    const $sub = document.getElementById('load-status-text');
-    if ($sub) $sub.textContent = 'Failed to load: ' + e.message;
+    setLoadStatus('Failed to load: ' + e.message);
   }
 }
 
-function setLoadStatus(text, spinning, showRefresh = false) {
-  // Update the first-load progress text (visible during fetch)
-  const $sub = document.getElementById('load-status-text');
-  if ($sub) $sub.textContent = text;
+function setLoadStatus(text) {
+  const $el = document.getElementById('load-status-text');
+  if ($el) $el.textContent = text;
 }
 
-function showStartReady(cacheInfo) {
-  // Hide loading state, reveal filters + browse button
-  document.getElementById('start-loading-state').style.display = 'none';
-  document.getElementById('start-filters').style.display = '';
-  document.getElementById('start-actions').style.display = '';
-
-  // Show cache age or nothing in the status area
-  const $cached = document.getElementById('load-status-cached');
-  if ($cached && cacheInfo) {
-    $cached.textContent = `${allDecks.length} decks · cached ${cacheAge(cacheInfo)}`;
-  } else if ($cached) {
-    $cached.textContent = `${allDecks.length} decks loaded`;
-  }
-
-  // Show refresh link if using cache
-  if (cacheInfo) {
-    const $refresh = document.createElement('button');
-    $refresh.textContent = 'Refresh';
-    $refresh.style.cssText = 'background:none;border:none;color:var(--gold-dim);font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:0 0 0 6px;font-family:inherit;';
-    $refresh.addEventListener('click', () => {
-      try { localStorage.removeItem(CACHE_KEY); } catch {}
-      location.reload();
-    });
-    document.getElementById('load-status').appendChild($refresh);
-  }
+function hideBrowseOverlay() {
+  const $overlay = document.getElementById('browse-loading-overlay');
+  if ($overlay) $overlay.classList.add('hidden');
 }
 
 function populateSetDropdown() {
@@ -995,7 +829,7 @@ function renderBrowse() {
 }
 
 function cardHtml(d) {
-  const pips = d.colors.map(c=>`<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('');
+  const pips = pipHtml(d.colors);
   const artHtml = d.art
     ? `<img src="${esc(d.art)}" alt="${esc(d.face||d.name)}" loading="lazy" class="loading" onload="this.classList.remove('loading')" /><div class="art-placeholder">⚔</div>`
     : `<div class="art-placeholder">⚔</div>`;
@@ -1046,7 +880,7 @@ async function openDetail(deckName) {
     <div style="margin-top:14px">
       <div class="detail-title">${esc(deck.name)}</div>
       <div class="detail-set">${esc(deck.setName)} · ${deck.releaseDate}</div>
-      <div class="detail-colors">${deck.colors.map(c=>`<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('')}</div>
+      <div class="detail-colors">${pipHtml(deck.colors)}</div>
       <div class="detail-commanders">
         <h3>Commanders</h3>
         ${deck.face ? `<div class="commander-entry"><span class="commander-label">Face</span><span class="commander-name">${esc(deck.face)}</span></div>` : ''}
@@ -1318,46 +1152,13 @@ document.addEventListener('mouseenter', e => {
 // ════════════════════════════════════════════════════════════════
 //  EVENT WIRING
 // ════════════════════════════════════════════════════════════════
-function syncFiltersFromStart() {
-  searchTerm   = document.getElementById('start-search').value.trim();
-  activeSet    = document.getElementById('start-set').value;
-  sortMode     = document.getElementById('start-sort').value;
-
-  // Sync browse toolbar to match
-  document.getElementById('browse-search').value = searchTerm;
-  document.getElementById('sort-select').value = sortMode;
-
-  // Sync browse color pips
-  document.querySelectorAll('#browse-color-row .pip-btn').forEach(btn => {
-    btn.classList.toggle('active', activeColors.has(btn.dataset.c));
-  });
-}
-
-document.getElementById('browse-btn').addEventListener('click', () => {
-  browseScrollY = 0;
-  syncFiltersFromStart();
-  renderBrowse();
-  showPage('page-browse');
-});
-
-document.getElementById('browse-back').addEventListener('click', () => {
-  showPage('page-start');
-});
 
 document.getElementById('detail-back').addEventListener('click', () => {
   showPage('page-browse');
   document.getElementById('browse-main').scrollTop = browseScrollY;
 });
 
-// Start page color pips
-document.getElementById('start-color-row').addEventListener('click', e => {
-  const btn = e.target.closest('.pip-btn'); if (!btn) return;
-  const c = btn.dataset.c;
-  if (activeColors.has(c)) { activeColors.delete(c); btn.classList.remove('active'); }
-  else { activeColors.add(c); btn.classList.add('active'); }
-});
-
-// Browse toolbar: live filter
+// Browse toolbar filters
 document.getElementById('browse-search').addEventListener('input', e => {
   searchTerm = e.target.value.trim();
   browseScrollY = 0;
@@ -1366,15 +1167,14 @@ document.getElementById('browse-search').addEventListener('input', e => {
 document.getElementById('sort-select').addEventListener('change', e => {
   sortMode = e.target.value; browseScrollY = 0; renderBrowse();
 });
+document.getElementById('start-set').addEventListener('change', e => {
+  activeSet = e.target.value; browseScrollY = 0; renderBrowse();
+});
 document.getElementById('browse-color-row').addEventListener('click', e => {
   const btn = e.target.closest('.pip-btn'); if (!btn) return;
   const c = btn.dataset.c;
   if (activeColors.has(c)) { activeColors.delete(c); btn.classList.remove('active'); }
   else { activeColors.add(c); btn.classList.add('active'); }
-  // Mirror back to start page pips
-  document.querySelectorAll('#start-color-row .pip-btn').forEach(b => {
-    b.classList.toggle('active', activeColors.has(b.dataset.c));
-  });
   browseScrollY = 0; renderBrowse();
 });
 
