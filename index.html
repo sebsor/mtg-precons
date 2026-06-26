@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1208" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Precons" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>MTG Commander Precons</title>
+  <style>
+    :root {
+      --bg:        #110e07;
+      --surface:   #1c1710;
+      --card-bg:   #221c10;
+      --border:    #3a2e18;
+      --gold:      #c9a84c;
+      --gold-dim:  #7a6330;
+      --text:      #e8dfc8;
+      --text-dim:  #8a7d60;
+      --accent:    #d4a017;
+      --w: #f9fafb; --u: #3b82f6; --b: #a855f7; --r: #ef4444; --g: #22c55e; --c: #9ca3af;
+      --pip-size: 18px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100dvh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(180deg, #2a1f08 0%, #1a1208 100%);
+      border-bottom: 1px solid var(--gold-dim);
+      padding: 14px 16px 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .header-top h1 {
+      font-size: 1.15rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .deck-count {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-family: monospace;
+      background: #2a2010;
+      padding: 3px 7px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── FILTERS ── */
+    .filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    #search {
+      width: 100%;
+      background: #2a2010;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      outline: none;
+      font-family: inherit;
+    }
+    #search:focus { border-color: var(--gold-dim); }
+    #search::placeholder { color: var(--text-dim); }
+
+    .color-filters {
+      display: flex;
+      gap: 4px;
+    }
+
+    .pip-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: 0.6rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s, border-color 0.1s;
+      color: #000;
+      user-select: none;
+    }
+    .pip-btn:active { transform: scale(0.9); }
+    .pip-btn.active { border-color: #fff; }
+    .pip-btn[data-c="W"] { background: var(--w); }
+    .pip-btn[data-c="U"] { background: var(--u); color: #fff; }
+    .pip-btn[data-c="B"] { background: var(--b); color: #fff; }
+    .pip-btn[data-c="R"] { background: var(--r); color: #fff; }
+    .pip-btn[data-c="G"] { background: var(--g); }
+    .pip-btn[data-c="C"] { background: var(--c); }
+
+    /* sort */
+    #sort-select {
+      background: #2a2010;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.75rem;
+      padding: 5px 7px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ── MAIN ── */
+    main {
+      padding: 12px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ── SET GROUP ── */
+    .set-group { margin-bottom: 24px; }
+
+    .set-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .set-name {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--gold-dim);
+    }
+
+    .set-year {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      font-family: monospace;
+    }
+
+    .set-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    }
+
+    /* ── DECK CARD ── */
+    .deck-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s;
+      position: relative;
+    }
+    .deck-card:hover { border-color: var(--gold-dim); }
+
+    .card-art {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+      background: #2a2010;
+    }
+
+    .card-art-placeholder {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, #2a2010 0%, #1c1710 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-dim);
+      font-size: 1.6rem;
+    }
+
+    .card-body {
+      padding: 9px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .card-deck-name {
+      font-size: 0.85rem;
+      color: var(--gold);
+      line-height: 1.2;
+    }
+
+    .card-commander {
+      font-size: 0.72rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .card-commander .label {
+      color: var(--text-dim);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .card-commander .cmd-name {
+      display: block;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 10px 8px;
+    }
+
+    .color-pips {
+      display: flex;
+      gap: 3px;
+    }
+
+    .pip {
+      width: var(--pip-size);
+      height: var(--pip-size);
+      border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,0.4);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5rem;
+      font-weight: bold;
+      color: #000;
+      flex-shrink: 0;
+    }
+    .pip.W { background: var(--w); }
+    .pip.U { background: var(--u); color: #fff; }
+    .pip.B { background: var(--b); color: #fff; }
+    .pip.R { background: var(--r); color: #fff; }
+    .pip.G { background: var(--g); }
+    .pip.C { background: var(--c); }
+
+    .release-date {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      font-family: monospace;
+    }
+
+    /* ── LOADING / ERROR / EMPTY ── */
+    .status {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    .status .icon { font-size: 2rem; margin-bottom: 10px; }
+    .status p { font-size: 0.85rem; }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── HIDDEN ── */
+    .hidden { display: none !important; }
+
+    @media (max-width: 400px) {
+      .set-cards { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .pip { width: 15px; height: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>⚔ Commander Precons</h1>
+    <span class="deck-count" id="deck-count">—</span>
+  </div>
+  <div class="filters">
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search deck or commander…" autocomplete="off" />
+    </div>
+    <div class="color-filters" id="color-filters">
+      <button class="pip-btn" data-c="W" title="White">W</button>
+      <button class="pip-btn" data-c="U" title="Blue">U</button>
+      <button class="pip-btn" data-c="B" title="Black">B</button>
+      <button class="pip-btn" data-c="R" title="Red">R</button>
+      <button class="pip-btn" data-c="G" title="Green">G</button>
+      <button class="pip-btn" data-c="C" title="Colorless">C</button>
+    </div>
+    <select id="sort-select">
+      <option value="date-desc">Newest first</option>
+      <option value="date-asc">Oldest first</option>
+      <option value="name">A – Z</option>
+    </select>
+  </div>
+</header>
+
+<main id="main">
+  <div class="status" id="status-loading">
+    <div class="spinner"></div>
+    <p>Fetching decks…</p>
+  </div>
+  <div class="status hidden" id="status-error">
+    <div class="icon">⚠</div>
+    <p id="error-msg">Something went wrong. Check your connection and reload.</p>
+  </div>
+  <div class="status hidden" id="status-empty">
+    <div class="icon">🔍</div>
+    <p>No decks match your filters.</p>
+  </div>
+  <div id="deck-grid"></div>
+</main>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const DECKS_URL = 'https://raw.githubusercontent.com/taw/magic-preconstructed-decks-data/master/decks_v2.json';
+const SCRYFALL_NAMED = 'https://api.scryfall.com/cards/named?exact=';
+const SCRYFALL_DELAY_MS = 80; // stay well under their 10 req/s limit
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let allDecks = [];          // processed decks
+let scryfallCache = {};     // name -> { colors, art }
+let activeColors = new Set();
+let sortMode = 'date-desc';
+let searchTerm = '';
+
+// ── FETCH & PROCESS ────────────────────────────────────────────────────────
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchScryfallCard(name) {
+  if (scryfallCache[name] !== undefined) return scryfallCache[name];
+  try {
+    await sleep(SCRYFALL_DELAY_MS);
+    const res = await fetch(SCRYFALL_NAMED + encodeURIComponent(name));
+    if (!res.ok) { scryfallCache[name] = null; return null; }
+    const card = await res.json();
+    const colors = card.color_identity || [];
+    // Art: prefer card_faces[0] for DFCs, else image_uris
+    let art = null;
+    if (card.card_faces && card.card_faces[0]?.image_uris) {
+      art = card.card_faces[0].image_uris.art_crop;
+    } else if (card.image_uris) {
+      art = card.image_uris.art_crop;
+    }
+    scryfallCache[name] = { colors, art };
+    return scryfallCache[name];
+  } catch (e) {
+    scryfallCache[name] = null;
+    return null;
+  }
+}
+
+function getCommanderNames(deck) {
+  const cmds = deck.commander || [];
+  const disp = deck.displayCommander || [];
+
+  // Modern decks: commander[] has 1-2 entries (face + partner)
+  if (cmds.length >= 2) {
+    return { face: cmds[0].name, second: cmds[1].name };
+  }
+  if (cmds.length === 1) {
+    // Check displayCommander for a different second commander
+    // (old 2011-2013 decks have 3 in disp; modern partner decks have 1 in disp)
+    const dispNames = disp.map(c => c.name).filter(n => n !== cmds[0].name);
+    if (dispNames.length === 1) {
+      // Only one different name → true partner / second commander
+      return { face: cmds[0].name, second: dispNames[0] };
+    }
+    // 0 or 2+ different → old multi-commander or just foil version → ignore disp
+    return { face: cmds[0].name, second: null };
+  }
+  return { face: null, second: null };
+}
+
+async function loadDecks() {
+  try {
+    const res = await fetch(DECKS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const raw = await res.json();
+
+    // Filter: Commander Deck type, no Collector's Editions, no MTGO
+    const filtered = raw.filter(d =>
+      d.type === 'Commander Deck' &&
+      !d.name.includes("Collector") &&
+      !d.set_name?.includes("MTGO")
+    );
+
+    // Sort by date descending first so we fetch face commanders of newest sets first
+    filtered.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''));
+
+    // Build deck objects (without Scryfall data yet)
+    allDecks = filtered.map(d => {
+      const { face, second } = getCommanderNames(d);
+      return {
+        name: d.name,
+        setName: d.set_name || '',
+        releaseDate: d.release_date || '',
+        face,
+        second,
+        colors: [],   // filled by Scryfall
+        art: null,    // filled by Scryfall
+      };
+    });
+
+    // Show cards immediately (no art/colors yet)
+    render();
+
+    // Now enrich with Scryfall data, rendering after each fetch
+    await enrichDecks();
+
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+async function enrichDecks() {
+  // Collect unique commander names to fetch
+  const names = new Set();
+  allDecks.forEach(d => {
+    if (d.face) names.add(d.face);
+    if (d.second) names.add(d.second);
+  });
+
+  let fetched = 0;
+  for (const name of names) {
+    await fetchScryfallCard(name);
+    fetched++;
+    // Re-apply Scryfall data to decks and re-render every 10 cards
+    if (fetched % 10 === 0 || fetched === names.size) {
+      applyScryfall();
+      render();
+    }
+  }
+}
+
+function applyScryfall() {
+  allDecks.forEach(d => {
+    const faceData = d.face ? scryfallCache[d.face] : null;
+    const secData = d.second ? scryfallCache[d.second] : null;
+
+    // Color identity = union of both commanders
+    const colorSet = new Set();
+    (faceData?.colors || []).forEach(c => colorSet.add(c));
+    (secData?.colors || []).forEach(c => colorSet.add(c));
+    const ORDER = ['W','U','B','R','G'];
+    d.colors = colorSet.size === 0 ? ['C'] : ORDER.filter(c => colorSet.has(c));
+
+    // Art from face commander
+    d.art = faceData?.art || null;
+  });
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function getFilteredDecks() {
+  let decks = [...allDecks];
+
+  // Search
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    decks = decks.filter(d =>
+      d.name.toLowerCase().includes(q) ||
+      d.setName.toLowerCase().includes(q) ||
+      (d.face && d.face.toLowerCase().includes(q)) ||
+      (d.second && d.second.toLowerCase().includes(q))
+    );
+  }
+
+  // Color filter: deck must contain ALL selected colors
+  if (activeColors.size > 0) {
+    decks = decks.filter(d =>
+      [...activeColors].every(c => d.colors.includes(c))
+    );
+  }
+
+  // Sort
+  if (sortMode === 'date-desc') decks.sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
+  else if (sortMode === 'date-asc') decks.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate));
+  else if (sortMode === 'name') decks.sort((a, b) => a.name.localeCompare(b.name));
+
+  return decks;
+}
+
+function render() {
+  const $loading = document.getElementById('status-loading');
+  const $error = document.getElementById('status-error');
+  const $empty = document.getElementById('status-empty');
+  const $grid = document.getElementById('deck-grid');
+  const $count = document.getElementById('deck-count');
+
+  if (allDecks.length === 0) return; // still loading
+
+  $loading.classList.add('hidden');
+
+  const decks = getFilteredDecks();
+  $count.textContent = decks.length + ' deck' + (decks.length !== 1 ? 's' : '');
+
+  if (decks.length === 0) {
+    $empty.classList.remove('hidden');
+    $grid.innerHTML = '';
+    return;
+  }
+
+  $empty.classList.add('hidden');
+
+  // Group by set name (maintaining current sort order for groups)
+  if (sortMode === 'name') {
+    $grid.innerHTML = decks.map(renderCard).join('');
+    return;
+  }
+
+  const groups = [];
+  const seen = new Map();
+  decks.forEach(d => {
+    if (!seen.has(d.setName)) {
+      seen.set(d.setName, []);
+      groups.push(d.setName);
+    }
+    seen.get(d.setName).push(d);
+  });
+
+  $grid.innerHTML = groups.map(setName => {
+    const setDecks = seen.get(setName);
+    const year = setDecks[0].releaseDate?.slice(0, 4) || '';
+    return `
+      <div class="set-group">
+        <div class="set-header">
+          <span class="set-name">${esc(setName)}</span>
+          <span class="set-year">${year}</span>
+        </div>
+        <div class="set-cards">
+          ${setDecks.map(renderCard).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCard(d) {
+  const artHtml = d.art
+    ? `<img class="card-art" src="${esc(d.art)}" alt="${esc(d.face || d.name)}" loading="lazy" />`
+    : `<div class="card-art-placeholder">⚔</div>`;
+
+  const pips = d.colors.map(c => `<span class="pip ${c}" title="${colorName(c)}">${c}</span>`).join('');
+
+  const cmdHtml = d.face
+    ? `<div class="card-commander">
+        <span class="label">Commander</span>
+        <span class="cmd-name">${esc(d.face)}</span>
+        ${d.second ? `<span class="label" style="margin-top:4px">Partner</span><span class="cmd-name">${esc(d.second)}</span>` : ''}
+       </div>`
+    : '';
+
+  return `
+    <div class="deck-card">
+      ${artHtml}
+      <div class="card-body">
+        <div class="card-deck-name">${esc(d.name)}</div>
+        ${cmdHtml}
+      </div>
+      <div class="card-footer">
+        <div class="color-pips">${pips}</div>
+        <span class="release-date">${d.releaseDate || ''}</span>
+      </div>
+    </div>
+  `;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function colorName(c) {
+  return { W:'White', U:'Blue', B:'Black', R:'Red', G:'Green', C:'Colorless' }[c] || c;
+}
+
+function showError(msg) {
+  document.getElementById('status-loading').classList.add('hidden');
+  document.getElementById('status-error').classList.remove('hidden');
+  document.getElementById('error-msg').textContent = msg || 'Something went wrong.';
+}
+
+// ── CONTROLS ───────────────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  render();
+});
+
+document.getElementById('sort-select').addEventListener('change', e => {
+  sortMode = e.target.value;
+  render();
+});
+
+document.getElementById('color-filters').addEventListener('click', e => {
+  const btn = e.target.closest('.pip-btn');
+  if (!btn) return;
+  const c = btn.dataset.c;
+  if (activeColors.has(c)) { activeColors.delete(c); btn.classList.remove('active'); }
+  else { activeColors.add(c); btn.classList.add('active'); }
+  render();
+});
+
+// ── BOOT ───────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+loadDecks();
+</script>
+</body>
+</html>
