@@ -1,4 +1,4 @@
-const CACHE = 'mtg-precons-v6';
+const CACHE = 'mtg-precons-v7';
 const SHELL = ['/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -34,7 +34,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for everything else (manifest, icons)
+  // Cache-first for manifest only; icons should also be network-first so they update
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
