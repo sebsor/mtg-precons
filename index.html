@@ -12,35 +12,34 @@
   <title>MTG Commander Precons</title>
   <style>
     :root {
-      --bg:       #110e07;
-      --surface:  #1c1710;
-      --card-bg:  #1f1a0f;
-      --border:   #3a2e18;
-      --gold:     #c9a84c;
-      --gold-dim: #7a6330;
-      --text:     #e8dfc8;
-      --text-dim: #8a7d60;
-      --accent:   #d4a017;
-      --pip-W: #f9fafb; --pip-U: #3b82f6; --pip-B: #9333ea;
-      --pip-R: #ef4444; --pip-G: #16a34a; --pip-C: #9ca3af;
-      --pip-size: 20px;
-      --radius: 8px;
+      --bg:        #f0ece8;
+      --surface:   #faf8f6;
+      --card-bg:   #ffffff;
+      --border:    #e0d8d2;
+      --text:      #2e2a26;
+      --text-dim:  #8a8078;
+      --accent:    #5a6e8c;
+      --pip-size:  20px;
+      --radius:    16px;
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+      /* Rotating pastel palette */
+      --pastel-0: #f4e7e2;
+      --pastel-1: #cee3e0;
+      --pastel-2: #c3ccf8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Georgia', serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       overflow-x: hidden;
     }
 
     /* ── PAGE SYSTEM ─────────────────────────────────────────────── */
     .page { display: none; flex-direction: column; min-height: 100dvh; }
     .page.active { display: flex; }
-    /* Browse page must be exactly viewport height so only the grid scrolls,
-       not the whole page — this keeps the preview panel fixed in view */
     #page-browse.active {
       height: 100dvh;
       min-height: unset;
@@ -49,31 +48,30 @@
 
     /* ── SHARED HEADER ───────────────────────────────────────────── */
     .app-header {
-      background: linear-gradient(180deg, #2a1f08 0%, #1a1208 100%);
-      border-bottom: 1px solid var(--gold-dim);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       padding: 12px 16px;
       position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; gap: 10px;
     }
     .app-header h1 {
       flex: 1;
-      font-size: 1rem; font-weight: normal;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--gold);
+      font-size: 0.9rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--text);
     }
     .back-btn {
       background: none; border: 1px solid var(--border);
-      color: var(--text-dim); border-radius: 6px;
-      padding: 5px 10px; font-size: 0.8rem;
+      color: var(--text-dim); border-radius: 20px;
+      padding: 5px 12px; font-size: 0.78rem;
       cursor: pointer; font-family: inherit;
     }
-    .back-btn:active { opacity: 0.7; }
+    .back-btn:active { opacity: 0.6; }
 
     /* ── MANA SYMBOL ICONS ───────────────────────────────────────── */
-    /* Both pip-btn (filter toggles) and pip (display) use Scryfall SVGs */
     .pip-btn {
-      width: 30px; height: 30px; border-radius: 50%;
-      border: 2px solid transparent;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 2.5px solid transparent;
       cursor: pointer; padding: 0;
       display: inline-flex; align-items: center; justify-content: center;
       transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
@@ -81,8 +79,8 @@
       background: none;
     }
     .pip-btn:active { transform: scale(0.88); }
-    .pip-btn.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
-    .pip-btn img { width: 24px; height: 24px; display: block; border-radius: 50%; }
+    .pip-btn.active { border-color: var(--text); box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
+    .pip-btn img { width: 26px; height: 26px; display: block; border-radius: 50%; }
 
     .pip {
       width: var(--pip-size); height: var(--pip-size);
@@ -92,8 +90,8 @@
     .pip img { width: 100%; height: 100%; display: block; }
 
     .mini-spinner {
-      width: 14px; height: 14px;
-      border: 2px solid var(--border); border-top-color: var(--gold);
+      width: 18px; height: 18px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
       border-radius: 50%; animation: spin 0.7s linear infinite;
       flex-shrink: 0;
     }
@@ -104,59 +102,59 @@
     ───────────────────────────────────────────────────────────── */
     #page-browse { }
     .browse-toolbar {
-      background: linear-gradient(180deg, #2a1f08 0%, #1a1208 100%);
-      border-bottom: 1px solid var(--gold-dim);
-      padding: 8px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
       position: sticky; top: 0; z-index: 100;
-      display: flex; flex-direction: column; gap: 6px;
+      display: flex; flex-direction: column; gap: 8px;
     }
     .browse-toolbar-row {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 8px;
     }
     #browse-search {
-      flex: 1; background: #2a2010; border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text); font-size: 0.82rem;
-      padding: 7px 10px; outline: none; font-family: inherit;
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; color: var(--text); font-size: 0.84rem;
+      padding: 7px 14px; outline: none; font-family: inherit;
     }
     #browse-search::placeholder { color: var(--text-dim); }
-    #browse-search:focus { border-color: var(--gold-dim); }
-    #sort-select {
-      background: #2a2010; border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text); font-size: 0.75rem;
-      padding: 6px 7px; outline: none; cursor: pointer;
+    #browse-search:focus { border-color: var(--accent); }
+    #sort-select, #start-set {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; color: var(--text); font-size: 0.75rem;
+      padding: 6px 10px; outline: none; cursor: pointer;
       -webkit-appearance: none; flex-shrink: 0;
     }
     .deck-count-badge {
       font-size: 0.68rem; color: var(--text-dim);
-      font-family: monospace; background: #2a2010;
-      padding: 3px 8px; border-radius: 10px;
+      font-family: monospace; background: var(--bg);
+      padding: 3px 10px; border-radius: 20px;
       border: 1px solid var(--border); flex-shrink: 0;
     }
 
-    /* grid */    .browse-main { padding: 10px; flex: 1; }
-    .set-group { margin-bottom: 20px; }
+    /* grid */
+    .browse-main { padding: 12px; flex: 1; }
+    .set-group { margin-bottom: 24px; }
     .set-header {
       display: flex; align-items: baseline; gap: 8px;
-      margin-bottom: 8px; padding-bottom: 5px;
+      margin-bottom: 10px; padding-bottom: 6px;
       border-bottom: 1px solid var(--border);
     }
-    .set-name { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-dim); }
+    .set-name { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 600; }
     .set-year { font-size: 0.65rem; color: var(--text-dim); font-family: monospace; }
-    .set-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 7px; }
+    .set-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
 
-    /* deck card */
+    /* deck card — pastel color assigned via inline style on .deck-card */
     .deck-card {
-      background: var(--card-bg); border: 1px solid var(--border);
       border-radius: var(--radius); overflow: hidden;
       display: flex; flex-direction: column;
-      cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
     }
-    .deck-card:active { transform: scale(0.97); border-color: var(--gold-dim); }
+    .deck-card:active { transform: scale(0.97); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
     .card-art-wrap {
       width: 100%; aspect-ratio: 16/9; overflow: hidden;
-      background: linear-gradient(135deg, #2a2010 0%, #1c1710 100%);
       position: relative;
     }
     .card-art-wrap img {
@@ -167,18 +165,17 @@
     .art-placeholder {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
-      color: var(--gold-dim); font-size: 1.4rem;
+      color: rgba(0,0,0,0.15); font-size: 1.6rem;
     }
 
-    .card-body { padding: 7px 9px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
-    .card-deck-name { font-size: 0.8rem; color: var(--gold); line-height: 1.2; }
+    .card-body { padding: 9px 11px 4px; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .card-deck-name { font-size: 0.82rem; color: var(--text); line-height: 1.25; font-weight: 600; }
     .card-cmd { font-size: 0.68rem; color: var(--text-dim); line-height: 1.3; }
     .card-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 4px 9px 7px;
+      display: flex; align-items: center;
+      padding: 5px 11px 10px;
     }
     .color-pips { display: flex; gap: 3px; }
-    .card-date { font-size: 0.6rem; color: var(--text-dim); font-family: monospace; }
 
     /* empty/error */
     .status-msg {
@@ -191,7 +188,6 @@
        DETAIL PAGE
     ───────────────────────────────────────────────────────────── */
 
-    /* Credit bar sits below hero on all screen sizes */
     .detail-credit-bar {
       font-size: 0.62rem;
       color: var(--text-dim);
@@ -203,23 +199,20 @@
       min-height: 18px;
     }
 
-    /* Base rules — apply everywhere, overridden per breakpoint below */
     #page-detail { }
     .detail-hero {
       position: relative;
       width: 100%;
       flex-shrink: 0;
-      background: #0e0b06;
+      background: #e8e4e0;
       overflow: hidden;
     }
-    /* Default (art crop): fill the area */
     .detail-hero img {
       width: 100%; height: 100%;
       object-fit: cover; object-position: top center;
       display: block;
       transition: opacity 0.2s;
     }
-    /* Full card mode: show entire card without cropping */
     .detail-hero.card-mode img {
       object-fit: contain;
       object-position: center;
@@ -233,11 +226,10 @@
     .detail-body {
       flex: 1;
       overflow-y: auto;
-      padding: 10px 14px 20px;
+      padding: 14px 16px 24px;
     }
-    .detail-preview-panel { /* inherits display:none from .card-preview-panel on mobile */ }
+    .detail-preview-panel { }
 
-    /* Mobile: lock page, art crop hero, scrollable list below */
     @media (max-width: 899px) {
       #page-detail.active {
         height: 100dvh;
@@ -252,92 +244,70 @@
         cursor: pointer;
         flex-shrink: 0;
       }
-      .detail-credit-bar {
-        flex-shrink: 0;
-      }
+      .detail-credit-bar { flex-shrink: 0; }
       .detail-hero-overlay { display: none; }
-      .detail-hero-hint {
-        position: absolute;
-        bottom: 6px; left: 0; right: 0;
-        text-align: center;
-        font-size: 0.6rem;
-        color: rgba(255,255,255,0.35);
-        font-family: sans-serif;
-        pointer-events: none;
-      }
     }
 
-    /* Desktop: art crop banner + side preview panel */
     @media (min-width: 900px) {
-      .detail-hero {
-        aspect-ratio: 16/7;
-        background: #1c1710;
-      }
+      .detail-hero { aspect-ratio: 16/7; }
       .detail-hero-overlay {
         position: absolute; inset: 0;
         background: linear-gradient(to bottom, transparent 30%, var(--bg) 100%);
       }
-      .detail-hero-hint { display: none; }
-      .detail-preview-panel {
-        height: auto;
-        align-self: stretch;
-      }
+      .detail-preview-panel { height: auto; align-self: stretch; }
       .detail-body { max-width: none; margin: 0; }
     }
 
     .detail-title {
-      font-size: 1.25rem; color: var(--gold);
+      font-size: 1.3rem; color: var(--text); font-weight: 700;
       margin-bottom: 2px; line-height: 1.2;
     }
     .detail-set { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px; }
-    .detail-colors { display: flex; gap: 5px; margin-bottom: 14px; }
+    .detail-colors { display: flex; gap: 5px; margin-bottom: 16px; }
 
-    .detail-commanders { margin-bottom: 16px; }
+    .detail-commanders { margin-bottom: 18px; }
     .detail-commanders h3 {
-      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--gold-dim); margin-bottom: 6px;
+      font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-dim); margin-bottom: 7px; font-weight: 600;
     }
     .commander-entry {
-      display: flex; align-items: center; gap: 8px;
-      padding: 7px 10px; background: var(--card-bg);
-      border: 1px solid var(--border); border-radius: 6px;
-      margin-bottom: 5px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 6px;
     }
     .commander-label {
-      font-size: 0.62rem; color: var(--text-dim);
+      font-size: 0.6rem; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.05em;
-      width: 60px; flex-shrink: 0;
+      width: 50px; flex-shrink: 0;
     }
-    .commander-name { font-size: 0.88rem; color: var(--text); }
+    .commander-name { font-size: 0.88rem; color: var(--text); font-weight: 500; }
 
     /* card list */
     .detail-list h3 {
-      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--gold-dim); margin-bottom: 8px;
+      font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
     }
-    .type-group { margin-bottom: 14px; }
+    .type-group { margin-bottom: 16px; }
     .type-group-header {
       display: flex; align-items: baseline; gap: 7px;
-      padding: 3px 0 4px; border-bottom: 1px solid var(--border);
-      margin-bottom: 5px;
+      padding: 3px 0 5px; border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
     }
-    .type-group-name { font-size: 0.72rem; color: var(--text); }
-    .type-group-count {
-      font-size: 0.65rem; color: var(--text-dim);
-      font-family: monospace;
-    }
+    .type-group-name { font-size: 0.75rem; color: var(--text); font-weight: 600; }
+    .type-group-count { font-size: 0.65rem; color: var(--text-dim); font-family: monospace; }
     .card-row {
       display: flex; align-items: center; gap: 8px;
-      padding: 4px 0; border-bottom: 1px solid #2a2010;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
     }
     .card-row:last-child { border-bottom: none; }
     .card-row-count {
-      font-size: 0.7rem; color: var(--gold-dim);
+      font-size: 0.7rem; color: var(--text-dim);
       font-family: monospace; width: 16px; text-align: right; flex-shrink: 0;
     }
-    .card-row-name { font-size: 0.8rem; color: var(--text); }
-    .card-row-foil { font-size: 0.6rem; color: var(--gold-dim); margin-left: auto; flex-shrink: 0; }
-    .card-row.tapped { background: #2a2010; border-radius: 4px; }
+    .card-row-name { font-size: 0.82rem; color: var(--text); }
+    .card-row-foil { font-size: 0.6rem; color: var(--accent); margin-left: auto; flex-shrink: 0; }
+    .card-row.tapped { background: var(--bg); border-radius: 6px; }
 
     .detail-loading {
       text-align: center; padding: 24px;
@@ -346,101 +316,71 @@
     }
     .spinner {
       width: 28px; height: 28px;
-      border: 2px solid var(--border); border-top-color: var(--gold);
+      border: 2px solid var(--border); border-top-color: var(--accent);
       border-radius: 50%; animation: spin 0.8s linear infinite;
     }
 
     /* ── BROWSE LOADING OVERLAY ──────────────────────────────────── */
     .browse-loading-overlay {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      padding: 40px 24px;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; padding: 40px 24px;
     }
     .browse-loading-overlay.hidden { display: none; }
+    .first-load-msg { text-align: center; max-width: 280px; }
+    .first-load-title { font-size: 0.95rem; color: var(--text); margin-bottom: 8px; font-weight: 500; }
+    .first-load-sub { font-size: 0.75rem; color: var(--accent); font-family: monospace; margin-bottom: 16px; min-height: 1.2em; }
+    .first-load-note {
+      font-size: 0.7rem; color: var(--text-dim); line-height: 1.5;
+      border-top: 1px solid var(--border); padding-top: 14px;
+    }
 
-    /* ── BROWSE BODY (two-column on desktop) ─────────────────────── */
-    .browse-body {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-      position: relative;
-    }
-    .browse-main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
+    /* ── BROWSE BODY ─────────────────────────────────────────────── */
+    .browse-body { display: flex; flex: 1; overflow: hidden; position: relative; }
+    .browse-main { flex: 1; overflow-y: auto; padding: 12px; }
 
     /* ── CARD PREVIEW PANEL ──────────────────────────────────────── */
-    /* Hidden on mobile — shown only when viewport is wide enough */
-    .card-preview-panel {
-      display: none;
-    }
+    .card-preview-panel { display: none; }
 
     @media (min-width: 900px) {
       .card-preview-panel {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 260px;
-        flex-shrink: 0;
-        height: 100%; /* fills the browse-body flex row */
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        width: 260px; flex-shrink: 0;
+        height: 100%;
         padding: 16px 12px;
         border-left: 1px solid var(--border);
         background: var(--surface);
       }
-
       .preview-empty {
-        text-align: center;
-        color: var(--text-dim);
-        font-size: 0.78rem;
-        line-height: 1.6;
-        border: 1px dashed var(--border);
-        border-radius: var(--radius);
-        padding: 20px;
-        width: 100%;
+        text-align: center; color: var(--text-dim); font-size: 0.78rem;
+        line-height: 1.6; border: 1px dashed var(--border);
+        border-radius: var(--radius); padding: 20px; width: 100%;
       }
-
       .preview-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
+        display: flex; flex-direction: column;
+        align-items: center; gap: 8px; width: 100%;
       }
-
-      #preview-img {
-        width: 100%;
-        max-width: 224px; /* standard card ratio ~63×88mm → 224×313px at this width */
+      #preview-img, #detail-preview-img {
+        width: 100%; max-width: 224px;
         border-radius: 10px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-        transition: opacity 0.2s;
-        display: block;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        transition: opacity 0.2s; display: block;
       }
-      #preview-img.loading { opacity: 0; }
-
+      #preview-img.loading, #detail-preview-img.loading { opacity: 0; }
       .preview-credit {
-        font-size: 0.6rem;
-        color: var(--text-dim);
-        text-align: center;
-        font-family: sans-serif;
+        font-size: 0.6rem; color: var(--text-dim);
+        text-align: center; font-family: sans-serif;
       }
     }
 
     /* responsive */
     @media (min-width: 600px) {
       .set-cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-      .detail-body { max-width: 700px; margin: 0 auto; }
     }
     @media (max-width: 360px) {
       .set-cards { grid-template-columns: 1fr 1fr; }
-      --pip-size: 16px;
     }
   </style>
 </head>
@@ -809,7 +749,7 @@ function renderBrowse() {
   }
 
   if (sortMode === 'name') {
-    $main.innerHTML = `<div class="set-cards">${decks.map(cardHtml).join('')}</div>`;
+    $main.innerHTML = `<div class="set-cards">${decks.map((d,i) => cardHtml(d,i)).join('')}</div>`;
   } else {
     const groups = [], seen = new Map();
     decks.forEach(d => {
@@ -823,7 +763,7 @@ function renderBrowse() {
           <span class="set-name">${esc(sn)}</span>
           <span class="set-year">${getYear(sd[0].releaseDate)}</span>
         </div>
-        <div class="set-cards">${sd.map(cardHtml).join('')}</div>
+        <div class="set-cards">${sd.map((d,i) => cardHtml(d,i)).join('')}</div>
       </div>`;
     }).join('');
   }
@@ -839,7 +779,10 @@ function renderBrowse() {
   document.getElementById('browse-main').scrollTop = browseScrollY;
 }
 
-function cardHtml(d) {
+const PASTELS = ['#f4e7e2', '#cee3e0', '#c3ccf8'];
+
+function cardHtml(d, idx) {
+  const bg = PASTELS[idx % 3];
   const pips = pipHtml(d.colors);
   const artHtml = d.art
     ? `<img src="${esc(d.art)}" alt="${esc(d.face||d.name)}" loading="lazy" class="loading" onload="this.classList.remove('loading')" /><div class="art-placeholder">⚔</div>`
@@ -848,7 +791,7 @@ function cardHtml(d) {
     ? (d.second ? `${esc(d.face)} &amp; ${esc(d.second)}` : esc(d.face))
     : '';
 
-  return `<div class="deck-card" data-name="${esc(d.name)}">
+  return `<div class="deck-card" data-name="${esc(d.name)}" style="background:${bg}">
     <div class="card-art-wrap">${artHtml}</div>
     <div class="card-body">
       <div class="card-deck-name">${esc(d.name)}</div>
